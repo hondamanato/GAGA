@@ -28,6 +28,14 @@ struct PostService {
         return try snapshot.documents.compactMap { try $0.data(as: Post.self) }
     }
 
+    func fetchPosts(tripId: String) async throws -> [Post] {
+        let snapshot = try await collection
+            .whereField("tripId", isEqualTo: tripId)
+            .order(by: "createdAt")
+            .getDocuments()
+        return try snapshot.documents.compactMap { try $0.data(as: Post.self) }
+    }
+
     func delete(post: Post) async throws {
         try await collection.document(post.id).delete()
         let ref = Storage.storage().reference().child("posts/\(post.userId)/\(post.id).jpg")

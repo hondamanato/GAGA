@@ -1,5 +1,7 @@
 import SwiftUI
 import PhotosUI
+import Photos
+import CoreLocation
 
 struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,6 +14,10 @@ struct CreatePostView: View {
     @State private var caption = ""
     @State private var location: Location = CityCatalog.all[0]
     @State private var selectedTripId: String?
+    @State private var photoDate: Date?
+    @State private var autoLocationName: String?
+
+    var initialTripId: String?
     @State private var isPosting = false
     @State private var errorMessage: String?
 
@@ -50,9 +56,28 @@ struct CreatePostView: View {
                 }
 
                 Section("場所") {
+                    if let autoLocationName {
+                        HStack {
+                            Image(systemName: "location.fill")
+                                .foregroundStyle(.blue)
+                            Text(autoLocationName)
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                        }
+                    }
                     Picker("場所", selection: $location) {
                         ForEach(CityCatalog.all, id: \.self) { city in
                             Text("\(city.name) (\(city.country))").tag(city)
+                        }
+                    }
+                }
+
+                if let photoDate {
+                    Section("撮影日時") {
+                        HStack {
+                            Image(systemName: "camera")
+                                .foregroundStyle(.secondary)
+                            Text(photoDate.formatted(date: .abbreviated, time: .shortened))
                         }
                     }
                 }
@@ -89,10 +114,34 @@ struct CreatePostView: View {
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
                 }
             }
+            .onAppear {
+                if let initialTripId { selectedTripId = initialTripId }
+            }
             .onChange(of: pickerItem) { _, newItem in
                 Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    guard let newItem else { return }
+
+                    // 画像データを読み込み
+                    if let data = try? await newItem.loadTransferable(type: Data.self) {
                         imageData = downsample(data, maxDimension: 1600)
+                    }
+
+                    // PHAsset から撮影日時・位置を取得
+                    if let assetId = newItem.itemIdentifier {
+                        let result = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
+                        if let asset = result.firstObject {
+                            if let date = asset.creationDate {
+                                photoDate = date
+                            }
+                            if let coordinate = asset.location?.coordinate,
+                               CLLocationCoordinate2DIsValid(coordinate) {
+                                // 最も近い CityCatalog の都市を自動選択
+                                let nearest = findNearestCity(to: coordinate)
+                                location = nearest
+                                // 逆ジオコーディングで地名を取得
+                                reverseGeocode(coordinate)
+                            }
+                        }
                     }
                 }
             }
@@ -120,7 +169,8 @@ struct CreatePostView: View {
                 userId: uid,
                 tripId: selectedTripId,
                 location: location,
-                caption: caption.trimmingCharacters(in: .whitespacesAndNewlines)
+                caption: caption.trimmingCharacters(in: .whitespacesAndNewlines),
+                createdAt: photoDate ?? .now
             )
             dismiss()
         } catch {
@@ -141,6 +191,34 @@ struct CreatePostView: View {
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
         return resized.jpegData(compressionQuality: 0.8) ?? data
+    }
+
+    private func findNearestCity(to coordinate: CLLocationCoordinate2D) -> Location {
+        let photoLoc = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        var best = CityCatalog.all[0]
+        var bestDist = Double.greatestFiniteMagnitude
+        for city in CityCatalog.all {
+            let cityLoc = CLLocation(latitude: city.latitude, longitude: city.longitude)
+            let d = photoLoc.distance(from: cityLoc)
+            if d < bestDist {
+                bestDist = d
+                best = city
+            }
+        }
+        return best
+    }
+
+    private func reverseGeocode(_ coordinate: CLLocationCoordinate2D) {
+        let geocoder = CLGeocoder()
+        let clLocation = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        geocoder.reverseGeocodeLocation(clLocation) { placemarks, _ in
+            if let pm = placemarks?.first {
+                let parts = [pm.locality, pm.administrativeArea, pm.country].compactMap { $0 }
+                if !parts.isEmpty {
+                    autoLocationName = parts.joined(separator: ", ")
+                }
+            }
+        }
     }
 }
 

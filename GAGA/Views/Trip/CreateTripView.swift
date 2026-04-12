@@ -13,6 +13,15 @@ struct CreateTripView: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var pickerTarget: PickerTarget?
+    @State private var daySpots: [[String]] = Array(repeating: [], count: 8) // 日数分の spots
+    @State private var dayNotes: [String] = Array(repeating: "", count: 8)
+    @State private var newSpotText: [Int: String] = [:]
+
+    private var numberOfDays: Int {
+        let cal = Calendar.current
+        let days = (cal.dateComponents([.day], from: cal.startOfDay(for: departureDate), to: cal.startOfDay(for: returnDate)).day ?? 0) + 1
+        return max(days, 1)
+    }
 
     private var canSave: Bool {
         !title.trimmingCharacters(in: .whitespaces).isEmpty
@@ -26,6 +35,11 @@ struct CreateTripView: View {
             Form {
                 Section("旅行タイトル") {
                     TextField("例: パリ一人旅", text: $title)
+                }
+
+                Section("日程") {
+                    DatePicker("出発日", selection: $departureDate, displayedComponents: .date)
+                    DatePicker("帰国日", selection: $returnDate, in: departureDate..., displayedComponents: .date)
                 }
 
                 Section("出発地") {
@@ -57,10 +71,51 @@ struct CreateTripView: View {
                     }
                 }
 
-                Section("日程") {
-                    DatePicker("出発日", selection: $departureDate, displayedComponents: .date)
-                    DatePicker("帰国日", selection: $returnDate, in: departureDate..., displayedComponents: .date)
+                ForEach(0..<numberOfDays, id: \.self) { dayIndex in
+                    Section {
+                        let spots = dayIndex < daySpots.count ? daySpots[dayIndex] : []
+                        ForEach(spots.indices, id: \.self) { spotIndex in
+                            HStack {
+                                Image(systemName: "mappin")
+                                    .foregroundStyle(.secondary)
+                                Text(spots[spotIndex])
+                            }
+                        }
+                        .onDelete { offsets in
+                            ensureCapacity(dayIndex)
+                            daySpots[dayIndex].remove(atOffsets: offsets)
+                        }
+
+                        HStack {
+                            TextField("場所を追加", text: Binding(
+                                get: { newSpotText[dayIndex] ?? "" },
+                                set: { newSpotText[dayIndex] = $0 }
+                            ))
+                            Button {
+                                let text = (newSpotText[dayIndex] ?? "").trimmingCharacters(in: .whitespaces)
+                                guard !text.isEmpty else { return }
+                                ensureCapacity(dayIndex)
+                                daySpots[dayIndex].append(text)
+                                newSpotText[dayIndex] = ""
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundStyle(.blue)
+                            }
+                            .disabled((newSpotText[dayIndex] ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+
+                        TextField("メモ（任意）", text: Binding(
+                            get: { dayIndex < dayNotes.count ? dayNotes[dayIndex] : "" },
+                            set: { val in ensureCapacity(dayIndex); dayNotes[dayIndex] = val }
+                        ), axis: .vertical)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    } header: {
+                        let date = Calendar.current.date(byAdding: .day, value: dayIndex, to: departureDate) ?? departureDate
+                        Text("\(dayIndex + 1)日目 — \(date.formatted(date: .abbreviated, time: .omitted))")
+                    }
                 }
+
             }
             .navigationTitle("旅行を作成")
             .navigationBarTitleDisplayMode(.inline)
@@ -76,6 +131,8 @@ struct CreateTripView: View {
                     .disabled(!canSave)
                 }
             }
+            .onChange(of: departureDate) { _, _ in ensureCapacity(numberOfDays - 1) }
+            .onChange(of: returnDate) { _, _ in ensureCapacity(numberOfDays - 1) }
             .sheet(item: $pickerTarget) { target in
                 LocationPickerSheet { location in
                     apply(location, to: target)
@@ -133,6 +190,21 @@ struct CreateTripView: View {
         }
     }
 
+    private func ensureCapacity(_ dayIndex: Int) {
+        while daySpots.count <= dayIndex { daySpots.append([]) }
+        while dayNotes.count <= dayIndex { dayNotes.append("") }
+    }
+
+    private func buildSchedule() -> [DaySchedule] {
+        let cal = Calendar.current
+        return (0..<numberOfDays).map { i in
+            let date = cal.date(byAdding: .day, value: i, to: departureDate) ?? departureDate
+            let spots = i < daySpots.count ? daySpots[i] : []
+            let notes = i < dayNotes.count ? dayNotes[i] : ""
+            return DaySchedule(date: date, spots: spots, notes: notes.trimmingCharacters(in: .whitespaces))
+        }
+    }
+
     private func save() async {
         guard let uid = authViewModel.firebaseUID else {
             errorMessage = "サインインが必要です"
@@ -147,7 +219,8 @@ struct CreateTripView: View {
             origin: origin,
             destinations: destinations,
             departureDate: departureDate,
-            returnDate: returnDate
+            returnDate: returnDate,
+            schedule: buildSchedule()
         )
 
         do {

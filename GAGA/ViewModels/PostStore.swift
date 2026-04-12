@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class PostStore {
     var timeline: [Post] = []
+    var tripPosts: [String: [Post]] = [:]
     var likedPostIds: Set<String> = []
     var isLoading = false
     var errorMessage: String?
@@ -34,7 +35,8 @@ final class PostStore {
         userId: String,
         tripId: String?,
         location: Location,
-        caption: String
+        caption: String,
+        createdAt: Date = .now
     ) async throws {
         let postId = UUID().uuidString
         let imageURL = try await service.uploadImage(imageData, userId: userId, postId: postId)
@@ -44,7 +46,8 @@ final class PostStore {
             tripId: tripId,
             imageURL: imageURL,
             location: location,
-            caption: caption
+            caption: caption,
+            createdAt: createdAt
         )
         try await service.create(post)
         await loadTimeline(currentUserId: userId)
@@ -92,8 +95,18 @@ final class PostStore {
         }
     }
 
+    func loadPosts(forTripId tripId: String) async {
+        do {
+            let posts = try await service.fetchPosts(tripId: tripId)
+            tripPosts[tripId] = posts
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func clear() {
         timeline = []
+        tripPosts = [:]
         likedPostIds = []
     }
 }

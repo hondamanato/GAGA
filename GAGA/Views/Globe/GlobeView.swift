@@ -135,7 +135,7 @@ struct GlobeView: View {
                 let midIndex = coords.count / 2
                 let midpoint = coords.isEmpty ? CLLocationCoordinate2D(latitude: 0, longitude: 0) : coords[midIndex]
                 let bearingRef = midIndex + 1 < coords.count ? coords[midIndex + 1] : coords.last ?? midpoint
-                let segBearing = bearing(from: midpoint, to: bearingRef)
+                let segBearing = geoBearing(from: midpoint, to: bearingRef)
                 segments.append(
                     RouteSegment(
                         id: "\(trip.id)-\(index)",
@@ -197,55 +197,7 @@ struct GlobeView: View {
         return result
     }
 
-    // MARK: - Bearing
-
-    private func bearing(from a: CLLocationCoordinate2D, to b: CLLocationCoordinate2D) -> CLLocationDirection {
-        let lat1 = a.latitude * .pi / 180
-        let lat2 = b.latitude * .pi / 180
-        let dLon = (b.longitude - a.longitude) * .pi / 180
-        let y = sin(dLon) * cos(lat2)
-        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
-        let deg = atan2(y, x) * 180 / .pi
-        return (deg + 360).truncatingRemainder(dividingBy: 360)
-    }
-
-    // MARK: - Great-circle path
-
-    private func generateGreatCirclePath(
-        from start: CLLocationCoordinate2D,
-        to end: CLLocationCoordinate2D,
-        pointCount: Int
-    ) -> [CLLocationCoordinate2D] {
-        var coordinates: [CLLocationCoordinate2D] = []
-
-        let lat1 = start.latitude * .pi / 180
-        let lon1 = start.longitude * .pi / 180
-        let lat2 = end.latitude * .pi / 180
-        let lon2 = end.longitude * .pi / 180
-
-        let d = acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lon2 - lon1))
-
-        guard d.isFinite, d > 0 else {
-            return [start, end]
-        }
-
-        for i in 0...pointCount {
-            let f = Double(i) / Double(pointCount)
-            let a = sin((1 - f) * d) / sin(d)
-            let b = sin(f * d) / sin(d)
-
-            let x = a * cos(lat1) * cos(lon1) + b * cos(lat2) * cos(lon2)
-            let y = a * cos(lat1) * sin(lon1) + b * cos(lat2) * sin(lon2)
-            let z = a * sin(lat1) + b * sin(lat2)
-
-            let lat = atan2(z, sqrt(x * x + y * y)) * 180 / .pi
-            let lon = atan2(y, x) * 180 / .pi
-
-            coordinates.append(CLLocationCoordinate2D(latitude: lat, longitude: lon))
-        }
-
-        return coordinates
-    }
+    // generateGreatCirclePath / geoBearing は Utilities/GeoMath.swift に定義
 }
 
 private struct RouteSegment {
