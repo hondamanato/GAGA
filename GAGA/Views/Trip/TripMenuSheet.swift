@@ -39,7 +39,13 @@ struct TripMenuSheet: View {
 
                 Section("持ち物チェックリスト") {
                     NavigationLink("チェックリストを見る") {
-                        ChecklistView(tripId: trip.id, destinations: trip.destinations)
+                        ChecklistView(
+                        tripId: trip.id,
+                        destinations: trip.destinations,
+                        departureDate: trip.departureDate,
+                        returnDate: trip.returnDate,
+                        schedule: trip.schedule
+                    )
                     }
                 }
             }

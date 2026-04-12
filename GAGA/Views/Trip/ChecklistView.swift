@@ -3,36 +3,122 @@ import SwiftUI
 struct ChecklistView: View {
     let tripId: String
     let destinations: [Location]
+    var departureDate: Date?
+    var returnDate: Date?
+    var schedule: [DaySchedule] = []
+
     @State private var items: [ChecklistItem] = []
+    @State private var isGenerating = false
+    @State private var isAIGenerated = false
+    @State private var newItemName = ""
 
     var body: some View {
-        List {
-            ForEach(ChecklistCategory.allCases, id: \.self) { category in
-                let categoryItems = items.filter { $0.category == category }
-                if !categoryItems.isEmpty {
-                    Section(category.rawValue) {
-                        ForEach(categoryItems) { item in
+        ZStack {
+            List {
+                let requiredItems = items.filter { $0.isRequired }
+                if !requiredItems.isEmpty {
+                    Section("必須") {
+                        ForEach(requiredItems) { item in
                             ChecklistRow(item: item) {
                                 toggleItem(item)
                             }
                         }
                     }
                 }
+
+                ForEach(ChecklistCategory.allCases, id: \.self) { category in
+                    if category == .essentials { } else {
+                        let categoryItems = items.filter { $0.category == category && !$0.isRequired }
+                        if !categoryItems.isEmpty {
+                            Section(category.rawValue) {
+                                ForEach(categoryItems) { item in
+                                    ChecklistRow(item: item) {
+                                        toggleItem(item)
+                                    }
+                                }
+                                .onDelete { offsets in
+                                    deleteItems(in: category, at: offsets)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    HStack(spacing: 6) {
+                        Image(systemName: isAIGenerated ? "sparkles" : "list.bullet")
+                            .foregroundStyle(isAIGenerated ? .purple : .secondary)
+                            .font(.caption)
+                        Text(isAIGenerated ? "AIが行き先に合わせて作成しました" : "基本テンプレートを表示中")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("アイテムを追加") {
+                    HStack {
+                        TextField("新しいアイテム", text: $newItemName)
+                        Button {
+                            addCustomItem()
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                        .disabled(newItemName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+            .opacity(isGenerating ? 0.3 : 1)
+
+            if isGenerating {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("AIがチェックリストを作成中...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("行き先の気候・文化を分析しています")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(24)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .navigationTitle("持ち物チェックリスト")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("追加", systemImage: "plus") {
-                    addCustomItem()
+                Button {
+                    Task { await regenerate() }
+                } label: {
+                    Image(systemName: "arrow.trianglehead.2.clockwise")
                 }
+                .disabled(isGenerating)
             }
         }
-        .onAppear {
+        .task {
             if items.isEmpty {
-                items = ChecklistTemplateService.generateChecklist(for: destinations)
+                await generateChecklist()
             }
         }
+    }
+
+    private func generateChecklist() async {
+        isGenerating = true
+        defer { isGenerating = false }
+        let result = await ChecklistTemplateService.generateChecklist(
+            for: destinations,
+            departureDate: departureDate,
+            returnDate: returnDate,
+            schedule: schedule
+        )
+        items = result.items
+        isAIGenerated = result.isAIGenerated
+    }
+
+    private func regenerate() async {
+        items = []
+        await generateChecklist()
     }
 
     private func toggleItem(_ item: ChecklistItem) {
@@ -40,9 +126,17 @@ struct ChecklistView: View {
         items[index].isChecked.toggle()
     }
 
+    private func deleteItems(in category: ChecklistCategory, at offsets: IndexSet) {
+        let categoryItems = items.filter { $0.category == category }
+        let idsToRemove = offsets.map { categoryItems[$0].id }
+        items.removeAll { idsToRemove.contains($0.id) }
+    }
+
     private func addCustomItem() {
-        let newItem = ChecklistItem(name: "新しいアイテム", category: .custom)
-        items.append(newItem)
+        let name = newItemName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        items.append(ChecklistItem(name: name, category: .custom))
+        newItemName = ""
     }
 }
 

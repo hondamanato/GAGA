@@ -8,6 +8,7 @@ enum ChecklistCategory: String, Codable, CaseIterable {
     case medicine = "薬・衛生用品"
     case documents = "書類"
     case recommended = "おすすめ"
+    case culture = "文化・マナー"
     case custom = "カスタム"
 }
 
