@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 @Observable
 @MainActor
@@ -7,23 +8,49 @@ final class PostStore {
     var tripPosts: [String: [Post]] = [:]
     var likedPostIds: Set<String> = []
     var isLoading = false
+    var isLoadingMore = false
+    var hasMorePosts = true
     var errorMessage: String?
 
     private let service = PostService()
+    private var lastDocument: DocumentSnapshot?
 
     func loadTimeline(currentUserId: String? = nil) async {
         isLoading = true
         defer { isLoading = false }
         do {
-            let posts = try await service.fetchTimeline()
-            timeline = posts
+            let result = try await service.fetchTimeline()
+            timeline = result.posts
+            lastDocument = result.lastDoc
+            hasMorePosts = result.posts.count >= 20
             if let uid = currentUserId {
                 likedPostIds = try await service.fetchLikedPostIds(
                     userId: uid,
-                    postIds: posts.map(\.id)
+                    postIds: result.posts.map(\.id)
                 )
             } else {
                 likedPostIds = []
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func loadMore(currentUserId: String? = nil) async {
+        guard hasMorePosts, !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        do {
+            let result = try await service.fetchTimeline(after: lastDocument)
+            timeline.append(contentsOf: result.posts)
+            lastDocument = result.lastDoc
+            hasMorePosts = result.posts.count >= 20
+            if let uid = currentUserId, !result.posts.isEmpty {
+                let newLiked = try await service.fetchLikedPostIds(
+                    userId: uid,
+                    postIds: result.posts.map(\.id)
+                )
+                likedPostIds.formUnion(newLiked)
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -51,6 +78,18 @@ final class PostStore {
         )
         try await service.create(post)
         await loadTimeline(currentUserId: userId)
+    }
+
+    func update(_ post: Post) async throws {
+        try await service.update(post)
+        if let idx = timeline.firstIndex(where: { $0.id == post.id }) {
+            timeline[idx] = post
+        }
+    }
+
+    func delete(_ post: Post) async throws {
+        try await service.delete(post: post)
+        timeline.removeAll { $0.id == post.id }
     }
 
     func toggleLike(post: Post, userId: String) async {
@@ -108,5 +147,7 @@ final class PostStore {
         timeline = []
         tripPosts = [:]
         likedPostIds = []
+        lastDocument = nil
+        hasMorePosts = true
     }
 }

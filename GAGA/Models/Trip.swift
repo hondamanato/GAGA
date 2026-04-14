@@ -6,7 +6,8 @@ enum TripStatus: String, Codable, CaseIterable {
     case completed = "完了"
 }
 
-struct Location: Codable, Equatable, Hashable {
+struct Location: Identifiable, Codable, Equatable, Hashable {
+    var id: String { "\(name)-\(latitude)-\(longitude)" }
     var name: String
     var country: String
     var latitude: Double

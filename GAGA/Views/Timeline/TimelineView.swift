@@ -5,6 +5,8 @@ struct TimelineView: View {
     @Environment(PostStore.self) private var postStore
     @State private var showCreatePost = false
     @State private var commentsTarget: Post?
+    @State private var editTarget: Post?
+    @State private var deleteTarget: Post?
 
     var body: some View {
         NavigationStack {
@@ -26,6 +28,22 @@ struct TimelineView: View {
                 .sheet(item: $commentsTarget) { post in
                     CommentsView(post: post)
                         .presentationDetents([.medium, .large])
+                }
+                .sheet(item: $editTarget) { post in
+                    EditPostView(post: post)
+                }
+                .alert("この投稿を削除しますか？", isPresented: Binding(
+                    get: { deleteTarget != nil },
+                    set: { if !$0 { deleteTarget = nil } }
+                )) {
+                    Button("削除", role: .destructive) {
+                        if let post = deleteTarget {
+                            Task { try? await postStore.delete(post) }
+                        }
+                    }
+                    Button("キャンセル", role: .cancel) { deleteTarget = nil }
+                } message: {
+                    Text("削除した投稿は元に戻せません")
                 }
                 .refreshable {
                     await postStore.loadTimeline(currentUserId: authViewModel.firebaseUID)
@@ -73,8 +91,38 @@ struct TimelineView: View {
                             commentsTarget = post
                         }
                     )
+                    .contextMenu {
+                        if post.userId == authViewModel.firebaseUID {
+                            Button {
+                                editTarget = post
+                            } label: {
+                                Label("編集", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                deleteTarget = post
+                            } label: {
+                                Label("削除", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .onAppear {
+                        if post.id == postStore.timeline.last?.id {
+                            Task {
+                                await postStore.loadMore(currentUserId: authViewModel.firebaseUID)
+                            }
+                        }
+                    }
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
+
+                if postStore.isLoadingMore {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)
@@ -114,25 +162,15 @@ private struct PostRow: View {
             }
             .buttonStyle(.plain)
 
-            AsyncImage(url: URL(string: post.imageURL)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                case .failure:
-                    Image(systemName: "photo")
-                        .font(.largeTitle)
-                        .foregroundStyle(.gray)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 240)
-                        .background(.gray.opacity(0.15))
-                default:
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 240)
-                        .background(.gray.opacity(0.15))
-                }
+            CachedAsyncImage(url: URL(string: post.imageURL)) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 240)
+                    .background(.gray.opacity(0.15))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 240)

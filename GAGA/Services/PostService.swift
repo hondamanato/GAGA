@@ -20,12 +20,16 @@ struct PostService {
         try collection.document(post.id).setData(from: post)
     }
 
-    func fetchTimeline(limit: Int = 50) async throws -> [Post] {
-        let snapshot = try await collection
+    func fetchTimeline(limit: Int = 20, after lastDocument: DocumentSnapshot? = nil) async throws -> (posts: [Post], lastDoc: DocumentSnapshot?) {
+        var query = collection
             .order(by: "createdAt", descending: true)
             .limit(to: limit)
-            .getDocuments()
-        return try snapshot.documents.compactMap { try $0.data(as: Post.self) }
+        if let lastDocument {
+            query = query.start(afterDocument: lastDocument)
+        }
+        let snapshot = try await query.getDocuments()
+        let posts = try snapshot.documents.compactMap { try $0.data(as: Post.self) }
+        return (posts, snapshot.documents.last)
     }
 
     func fetchPosts(tripId: String) async throws -> [Post] {
@@ -36,10 +40,32 @@ struct PostService {
         return try snapshot.documents.compactMap { try $0.data(as: Post.self) }
     }
 
+    func update(_ post: Post) async throws {
+        try collection.document(post.id).setData(from: post)
+    }
+
     func delete(post: Post) async throws {
         try await collection.document(post.id).delete()
         let ref = Storage.storage().reference().child("posts/\(post.userId)/\(post.id).jpg")
         try? await ref.delete()
+    }
+
+    func fetchPosts(locationName: String, limit: Int = 30) async throws -> [Post] {
+        let snapshot = try await collection
+            .whereField("location.name", isEqualTo: locationName)
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        return try snapshot.documents.compactMap { try $0.data(as: Post.self) }
+    }
+
+    func fetchPosts(country: String, limit: Int = 30) async throws -> [Post] {
+        let snapshot = try await collection
+            .whereField("location.country", isEqualTo: country)
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        return try snapshot.documents.compactMap { try $0.data(as: Post.self) }
     }
 
     // MARK: - Likes

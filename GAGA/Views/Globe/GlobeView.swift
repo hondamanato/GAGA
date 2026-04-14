@@ -14,6 +14,7 @@ struct GlobeView: View {
     // カメラが変わる度にインクリメントしてアノテーションを再評価させる
     @State private var cameraTick: Int = 0
     @State private var mapRef: MapboxMap?
+    @State private var tappedLabel: TappedLabel?
 
     var body: some View {
         ZStack {
@@ -22,6 +23,7 @@ struct GlobeView: View {
                     flightRoutes
                     planeAnnotations
                     pinAnnotations
+                    labelTapInteractions
                 }
                 .mapStyle(.satelliteStreets)
                 .onCameraChanged { _ in
@@ -39,6 +41,7 @@ struct GlobeView: View {
                     atmosphere.highColor = .constant(StyleColor(UIColor(red: 0.05, green: 0.05, blue: 0.2, alpha: 1.0)))
                     atmosphere.horizonBlend = .constant(0.05)
                     try? proxy.map?.setAtmosphere(atmosphere)
+                    try? proxy.map?.localizeLabels(into: Locale.current)
 
                     // 地球儀スケールで邪魔になるレイヤーを非表示にする。
                     // 国名 / 州名 / 都市名の -label レイヤーと衛星 raster は残す。
@@ -59,6 +62,9 @@ struct GlobeView: View {
                 }
             }
             .ignoresSafeArea()
+        }
+        .sheet(item: $tappedLabel) { label in
+            LocationPostsView(tappedLabel: label)
         }
     }
 
@@ -160,6 +166,40 @@ struct GlobeView: View {
         }
     }
 
+    // MARK: - Label Tap
+
+    private static let tappableLayers = [
+        "country-label", "state-label", "settlement-label",
+        "settlement-subdivision-label",
+    ]
+
+    @MapContentBuilder
+    private var labelTapInteractions: some MapContent {
+        ForEvery(Self.tappableLayers, id: \.self) { layerId in
+            TapInteraction(.layer(layerId)) { feature, context in
+                let props = feature.properties
+                guard let name = Self.stringValue(props["name"] as? JSONValue)
+                    ?? Self.stringValue(props["name_en"] as? JSONValue) else {
+                    return false
+                }
+                let isCountry = layerId == "country-label"
+                let coord = context.coordinate
+                tappedLabel = TappedLabel(
+                    name: name,
+                    isCountry: isCountry,
+                    latitude: coord.latitude,
+                    longitude: coord.longitude
+                )
+                return true
+            }
+        }
+    }
+
+    private static func stringValue(_ value: JSONValue?) -> String? {
+        guard case .string(let s) = value else { return nil }
+        return s
+    }
+
     // MARK: - Pins
 
     @MapContentBuilder
@@ -198,6 +238,14 @@ struct GlobeView: View {
     }
 
     // generateGreatCirclePath / geoBearing は Utilities/GeoMath.swift に定義
+}
+
+struct TappedLabel: Identifiable {
+    let id = UUID()
+    let name: String
+    let isCountry: Bool
+    let latitude: Double
+    let longitude: Double
 }
 
 private struct RouteSegment {

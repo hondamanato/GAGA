@@ -11,6 +11,7 @@ struct ChecklistView: View {
     @State private var isGenerating = false
     @State private var isAIGenerated = false
     @State private var newItemName = ""
+    @State private var saveTask: Task<Void, Never>?
 
     var body: some View {
         ZStack {
@@ -98,9 +99,18 @@ struct ChecklistView: View {
         }
         .task {
             if items.isEmpty {
-                await generateChecklist()
+                await loadOrGenerate()
             }
         }
+    }
+
+    private func loadOrGenerate() async {
+        if let saved = try? await ChecklistService.load(tripId: tripId), !saved.isEmpty {
+            items = saved
+            isAIGenerated = true
+            return
+        }
+        await generateChecklist()
     }
 
     private func generateChecklist() async {
@@ -114,9 +124,11 @@ struct ChecklistView: View {
         )
         items = result.items
         isAIGenerated = result.isAIGenerated
+        scheduleSave()
     }
 
     private func regenerate() async {
+        ChecklistService.invalidate(tripId: tripId)
         items = []
         await generateChecklist()
     }
@@ -124,12 +136,14 @@ struct ChecklistView: View {
     private func toggleItem(_ item: ChecklistItem) {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         items[index].isChecked.toggle()
+        scheduleSave()
     }
 
     private func deleteItems(in category: ChecklistCategory, at offsets: IndexSet) {
         let categoryItems = items.filter { $0.category == category }
         let idsToRemove = offsets.map { categoryItems[$0].id }
         items.removeAll { idsToRemove.contains($0.id) }
+        scheduleSave()
     }
 
     private func addCustomItem() {
@@ -137,6 +151,18 @@ struct ChecklistView: View {
         guard !name.isEmpty else { return }
         items.append(ChecklistItem(name: name, category: .custom))
         newItemName = ""
+        scheduleSave()
+    }
+
+    private func scheduleSave() {
+        saveTask?.cancel()
+        let currentItems = items
+        let id = tripId
+        saveTask = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            try? await ChecklistService.save(tripId: id, items: currentItems)
+        }
     }
 }
 

@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "hero-uk.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
