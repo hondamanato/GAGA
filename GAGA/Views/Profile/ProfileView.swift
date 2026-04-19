@@ -1,10 +1,12 @@
 import SwiftUI
+import MapboxMaps
 
 struct ProfileView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @Environment(TripStore.self) private var tripStore
 
     @State private var selectedTab: ProfileTab = .globe
+    @Namespace private var tabAnimation
 
     private var user: AppUser? { authViewModel.currentUser }
 
@@ -32,6 +34,9 @@ struct ProfileView: View {
             .navigationDestination(for: String.self) { userId in
                 UserProfileView(userId: userId)
             }
+            .navigationDestination(for: Trip.self) { trip in
+                TripDetailView(trip: trip)
+            }
             .refreshable {
                 await tripStore.load(userId: authViewModel.firebaseUID)
             }
@@ -40,25 +45,17 @@ struct ProfileView: View {
 
     private var header: some View {
         HStack(spacing: 16) {
-            Circle()
-                .fill(.gray.opacity(0.3))
-                .frame(width: 72, height: 72)
-                .overlay {
-                    Image(systemName: "person.fill")
-                        .font(.title)
-                        .foregroundStyle(.gray)
-                }
+            GAGAAvatar(url: user?.avatarURL, size: 72)
             VStack(alignment: .leading, spacing: 4) {
                 Text(user?.displayName ?? "ゲストユーザー")
-                    .font(.title3)
-                    .fontWeight(.bold)
+                    .font(GAGATheme.titleFont)
                 if let bio = user?.bio, !bio.isEmpty {
                     Text(bio)
-                        .font(.caption)
+                        .font(GAGATheme.captionFont)
                         .foregroundStyle(.secondary)
                 } else {
                     Text("ログインして旅行を記録しよう")
-                        .font(.caption)
+                        .font(GAGATheme.captionFont)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -71,9 +68,27 @@ struct ProfileView: View {
         HStack {
             StatItem(value: "\(visitedCountriesCount)", label: "国")
             Divider().frame(height: 32)
-            StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
+            if let uid = authViewModel.firebaseUID {
+                NavigationLink {
+                    FollowListView(userId: uid, initialTab: .followers)
+                } label: {
+                    StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
+                }
+                .buttonStyle(.plain)
+            } else {
+                StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
+            }
             Divider().frame(height: 32)
-            StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
+            if let uid = authViewModel.firebaseUID {
+                NavigationLink {
+                    FollowListView(userId: uid, initialTab: .following)
+                } label: {
+                    StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
+                }
+                .buttonStyle(.plain)
+            } else {
+                StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
+            }
         }
         .padding(.horizontal, 24)
     }
@@ -95,7 +110,9 @@ struct ProfileView: View {
         HStack(spacing: 0) {
             ForEach(ProfileTab.allCases, id: \.self) { tab in
                 Button {
-                    selectedTab = tab
+                    withAnimation(.spring(duration: 0.3)) {
+                        selectedTab = tab
+                    }
                 } label: {
                     VStack(spacing: 6) {
                         Image(systemName: tab.icon)
@@ -103,9 +120,16 @@ struct ProfileView: View {
                             .foregroundStyle(selectedTab == tab ? .primary : .secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
-                        Rectangle()
-                            .fill(selectedTab == tab ? Color.primary : Color.clear)
-                            .frame(height: 1)
+                        if selectedTab == tab {
+                            Rectangle()
+                                .fill(GAGATheme.accentGradient)
+                                .frame(height: 2)
+                                .matchedGeometryEffect(id: "tabIndicator", in: tabAnimation)
+                        } else {
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: 2)
+                        }
                     }
                 }
                 .buttonStyle(.plain)
@@ -115,20 +139,23 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var tabContent: some View {
-        switch selectedTab {
-        case .globe:
-            GlobeView()
+        Group {
+            switch selectedTab {
+            case .globe:
+                GlobeView()
+                    .frame(height: 400)
+            case .suitcase:
+                ContentUnavailableView(
+                    "3Dスーツケース",
+                    systemImage: "suitcase.fill",
+                    description: Text("近日公開予定")
+                )
                 .frame(height: 400)
-        case .suitcase:
-            ContentUnavailableView(
-                "まだ何もありません",
-                systemImage: "suitcase",
-                description: Text("近日公開")
-            )
-            .frame(height: 400)
-        case .list:
-            tripListContent
+            case .list:
+                tripListContent
+            }
         }
+        .id(selectedTab)
     }
 
     @ViewBuilder
@@ -141,35 +168,16 @@ struct ProfileView: View {
             )
             .frame(height: 400)
         } else {
-            LazyVStack(spacing: 0) {
+            LazyVStack(spacing: 16) {
                 ForEach(tripStore.trips) { trip in
-                    NavigationLink {
-                        TripDetailView(trip: trip)
-                    } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "airplane.departure")
-                                .foregroundStyle(.blue)
-                                .frame(width: 32)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(trip.title)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.primary)
-                                Text(trip.destinations.map(\.name).joined(separator: " → "))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal)
-                        .padding(.vertical, 10)
+                    NavigationLink(value: trip) {
+                        ProfileTripCard(trip: trip)
                     }
                     .buttonStyle(.plain)
-                    Divider()
+                    .contentShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
                 }
             }
+            .padding(.horizontal, 16)
         }
     }
 
@@ -183,6 +191,104 @@ private enum ProfileTab: CaseIterable {
         case .globe: "globe.americas.fill"
         case .suitcase: "suitcase.fill"
         case .list: "list.bullet"
+        }
+    }
+}
+
+private struct ProfileTripCard: View {
+    let trip: Trip
+
+    private var routeText: String {
+        ([trip.origin] + trip.destinations).map(\.name).joined(separator: " → ")
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        return f
+    }()
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            cardBackground
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .clipped()
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.7)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 6) {
+                Spacer()
+                Text(trip.title)
+                    .font(GAGATheme.headlineFont)
+                    .foregroundStyle(.white)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.caption2)
+                    Text(routeText)
+                        .font(GAGATheme.captionFont)
+                        .lineLimit(1)
+                }
+                .foregroundStyle(.white.opacity(0.85))
+
+                HStack(spacing: 8) {
+                    Text(trip.status.rawValue)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(GAGATheme.tripStatusColor(trip.status).opacity(0.3), in: Capsule())
+                        .foregroundStyle(.white)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.caption2)
+                        Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
+                            .font(GAGATheme.captionFont)
+                    }
+                    .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            .padding(14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
+    }
+
+    @ViewBuilder
+    private var cardBackground: some View {
+        if let urlStr = trip.coverImageURL, let url = URL(string: urlStr) {
+            CachedAsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                fallbackBackground
+            }
+        } else if let dest = trip.destinations.first,
+                  let asset = LocationPostsView.heroAssets[dest.country] {
+            Image(asset)
+                .resizable()
+                .scaledToFill()
+        } else {
+            fallbackBackground
+        }
+    }
+
+    @ViewBuilder
+    private var fallbackBackground: some View {
+        if let dest = trip.destinations.first {
+            let token = MapboxOptions.accessToken
+            let urlStr = "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/\(dest.longitude),\(dest.latitude),6,0/800x400@2x?access_token=\(token)"
+            CachedAsyncImage(url: URL(string: urlStr)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Rectangle().fill(GAGATheme.deepNavy.opacity(0.3))
+            }
+        } else {
+            Rectangle().fill(GAGATheme.deepNavy.opacity(0.3))
         }
     }
 }

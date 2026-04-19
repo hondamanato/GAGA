@@ -1,210 +1,236 @@
 import SwiftUI
+import MapboxMaps
 
 struct TimelineView: View {
     @Environment(AuthViewModel.self) private var authViewModel
-    @Environment(PostStore.self) private var postStore
-    @State private var showCreatePost = false
-    @State private var commentsTarget: Post?
-    @State private var editTarget: Post?
-    @State private var deleteTarget: Post?
+    @Environment(TripStore.self) private var tripStore
+
+    @State private var userCache: [String: AppUser] = [:]
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("タイムライン")
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showCreatePost = true
-                        } label: {
-                            Image(systemName: "square.and.pencil")
-                        }
-                        .disabled(authViewModel.firebaseUID == nil)
-                    }
-                }
-                .sheet(isPresented: $showCreatePost) {
-                    CreatePostView()
-                }
-                .sheet(item: $commentsTarget) { post in
-                    CommentsView(post: post)
-                        .presentationDetents([.medium, .large])
-                }
-                .sheet(item: $editTarget) { post in
-                    EditPostView(post: post)
-                }
-                .alert("この投稿を削除しますか？", isPresented: Binding(
-                    get: { deleteTarget != nil },
-                    set: { if !$0 { deleteTarget = nil } }
-                )) {
-                    Button("削除", role: .destructive) {
-                        if let post = deleteTarget {
-                            Task { try? await postStore.delete(post) }
-                        }
-                    }
-                    Button("キャンセル", role: .cancel) { deleteTarget = nil }
-                } message: {
-                    Text("削除した投稿は元に戻せません")
-                }
                 .refreshable {
-                    await postStore.loadTimeline(currentUserId: authViewModel.firebaseUID)
+                    await tripStore.loadTimeline(currentUserId: authViewModel.firebaseUID)
+                    await loadUsers(for: tripStore.timeline)
                 }
                 .navigationDestination(for: String.self) { userId in
                     UserProfileView(userId: userId)
                 }
+                .navigationDestination(for: Trip.self) { trip in
+                    TripDetailView(trip: trip)
+                }
                 .alert(
                     "読み込みに失敗しました",
                     isPresented: Binding(
-                        get: { postStore.errorMessage != nil },
-                        set: { if !$0 { postStore.errorMessage = nil } }
+                        get: { tripStore.errorMessage != nil },
+                        set: { if !$0 { tripStore.errorMessage = nil } }
                     )
                 ) {
-                    Button("OK", role: .cancel) { postStore.errorMessage = nil }
+                    Button("OK", role: .cancel) { tripStore.errorMessage = nil }
                 } message: {
-                    Text(postStore.errorMessage ?? "")
+                    Text(tripStore.errorMessage ?? "")
+                }
+                .task {
+                    if userCache.isEmpty, !tripStore.timeline.isEmpty {
+                        await loadUsers(for: tripStore.timeline)
+                    }
                 }
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        if postStore.isLoading && postStore.timeline.isEmpty {
+        if tripStore.isLoading && tripStore.timeline.isEmpty {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if postStore.timeline.isEmpty {
+        } else if tripStore.timeline.isEmpty {
             ContentUnavailableView(
-                "投稿がまだありません",
-                systemImage: "photo.on.rectangle.angled",
-                description: Text("右上のボタンから最初の投稿をしましょう")
+                "旅行プランがまだありません",
+                systemImage: "airplane",
+                description: Text("旅行タブから最初のプランを作ってみましょう")
             )
         } else {
-            List {
-                ForEach(postStore.timeline) { post in
-                    PostRow(
-                        post: post,
-                        isLiked: postStore.likedPostIds.contains(post.id),
-                        canInteract: authViewModel.firebaseUID != nil,
-                        onLikeTap: {
-                            guard let uid = authViewModel.firebaseUID else { return }
-                            Task { await postStore.toggleLike(post: post, userId: uid) }
-                        },
-                        onCommentTap: {
-                            commentsTarget = post
+            ScrollView {
+                LazyVStack(spacing: 20) {
+                    ForEach(tripStore.timeline) { trip in
+                        NavigationLink(value: trip) {
+                            TimelineTripCard(
+                                trip: trip,
+                                user: userCache[trip.userId]
+                            )
                         }
-                    )
-                    .contextMenu {
-                        if post.userId == authViewModel.firebaseUID {
-                            Button {
-                                editTarget = post
-                            } label: {
-                                Label("編集", systemImage: "pencil")
-                            }
-                            Button(role: .destructive) {
-                                deleteTarget = post
-                            } label: {
-                                Label("削除", systemImage: "trash")
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            if trip.id == tripStore.timeline.last?.id {
+                                Task {
+                                    await tripStore.loadMore(currentUserId: authViewModel.firebaseUID)
+                                    await loadUsers(for: tripStore.timeline)
+                                }
                             }
                         }
                     }
-                    .onAppear {
-                        if post.id == postStore.timeline.last?.id {
-                            Task {
-                                await postStore.loadMore(currentUserId: authViewModel.firebaseUID)
-                            }
-                        }
-                    }
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                }
 
-                if postStore.isLoadingMore {
-                    HStack {
-                        Spacer()
+                    if tripStore.isLoadingMore {
                         ProgressView()
-                        Spacer()
+                            .padding()
                     }
-                    .listRowSeparator(.hidden)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
-            .listStyle(.plain)
+        }
+    }
+
+    private func loadUsers(for trips: [Trip]) async {
+        let ids = Set(trips.map(\.userId)).subtracting(userCache.keys)
+        guard !ids.isEmpty else { return }
+        if let fetched = try? await UserService().fetchUsers(ids: Array(ids)) {
+            for (key, value) in fetched {
+                userCache[key] = value
+            }
         }
     }
 }
 
-private struct PostRow: View {
-    let post: Post
-    let isLiked: Bool
-    let canInteract: Bool
-    let onLikeTap: () -> Void
-    let onCommentTap: () -> Void
+// MARK: - Timeline Trip Card
+
+private struct TimelineTripCard: View {
+    let trip: Trip
+    let user: AppUser?
+
+    private var routeText: String {
+        let names = ([trip.origin] + trip.destinations).map {
+            flagEmoji(for: $0.country) + " " + $0.name
+        }
+        return names.joined(separator: " → ")
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        return f
+    }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            NavigationLink(value: post.userId) {
-                HStack(spacing: 10) {
-                    Circle()
-                        .fill(.gray.opacity(0.3))
-                        .frame(width: 36, height: 36)
-                        .overlay {
-                            Image(systemName: "person.fill")
-                                .foregroundStyle(.gray)
-                        }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(post.location.name)
+        ZStack(alignment: .bottomLeading) {
+            // Background image
+            cardBackground
+                .frame(maxWidth: .infinity)
+                .frame(height: 180)
+                .clipped()
+
+            // Dark gradient
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.7)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            // Top-left: user avatar
+            VStack {
+                HStack {
+                    GAGAAvatar(url: user?.avatarURL, size: 32)
+                        .shadow(color: .black.opacity(0.4), radius: 3)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(user?.displayName ?? "Traveler")
+                            .font(.caption)
                             .fontWeight(.semibold)
-                            .font(.subheadline)
-                            .foregroundStyle(.primary)
-                        Text(post.createdAt.formatted(.relative(presentation: .named)))
+                            .foregroundStyle(.white)
+                        Text(trip.createdAt.formatted(.relative(presentation: .named)))
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white.opacity(0.7))
                     }
                     Spacer()
+                    Text(trip.status.rawValue)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(GAGATheme.tripStatusColor(trip.status).opacity(0.3), in: Capsule())
+                        .foregroundStyle(.white)
                 }
-            }
-            .buttonStyle(.plain)
-
-            CachedAsyncImage(url: URL(string: post.imageURL)) { image in
-                image
-                    .resizable()
-                    .scaledToFill()
-            } placeholder: {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 240)
-                    .background(.gray.opacity(0.15))
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 240)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            if !post.caption.isEmpty {
-                Text(post.caption)
-                    .font(.subheadline)
+                .padding(12)
+                Spacer()
             }
 
-            HStack(spacing: 20) {
-                Button(action: onLikeTap) {
-                    Label("\(post.likesCount)", systemImage: isLiked ? "heart.fill" : "heart")
-                        .foregroundStyle(isLiked ? .red : .secondary)
+            // Bottom: trip info
+            VStack(alignment: .leading, spacing: 6) {
+                Spacer()
+                Text(trip.title)
+                    .font(GAGATheme.headlineFont)
+                    .foregroundStyle(.white)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.caption2)
+                    Text(routeText)
+                        .font(GAGATheme.captionFont)
+                        .lineLimit(1)
                 }
-                .buttonStyle(.plain)
-                .disabled(!canInteract)
+                .foregroundStyle(.white.opacity(0.85))
 
-                Button(action: onCommentTap) {
-                    Label("\(post.commentsCount)", systemImage: "bubble.right")
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                    Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
+                        .font(GAGATheme.captionFont)
                 }
-                .buttonStyle(.plain)
-                .disabled(!canInteract)
+                .foregroundStyle(.white.opacity(0.7))
             }
-            .font(.subheadline)
+            .padding(14)
         }
-        .padding(.vertical, 4)
+        .clipShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
     }
+
+    @ViewBuilder
+    private var cardBackground: some View {
+        if let urlStr = trip.coverImageURL, let url = URL(string: urlStr) {
+            CachedAsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                fallbackBackground
+            }
+        } else if let dest = trip.destinations.first,
+                  let asset = LocationPostsView.heroAssets[dest.country] {
+            Image(asset)
+                .resizable()
+                .scaledToFill()
+        } else {
+            fallbackBackground
+        }
+    }
+
+    @ViewBuilder
+    private var fallbackBackground: some View {
+        if let dest = trip.destinations.first {
+            let token = MapboxOptions.accessToken
+            let urlStr = "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/\(dest.longitude),\(dest.latitude),6,0/800x400@2x?access_token=\(token)"
+            CachedAsyncImage(url: URL(string: urlStr)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Rectangle().fill(GAGATheme.deepNavy.opacity(0.3))
+            }
+        } else {
+            Rectangle().fill(GAGATheme.deepNavy.opacity(0.3))
+                .overlay {
+                    Image(systemName: "airplane")
+                        .font(.largeTitle)
+                        .foregroundStyle(GAGATheme.coral.opacity(0.4))
+                }
+        }
+    }
+}
+
+// Make Trip Hashable for NavigationLink
+extension Trip: Hashable {
+    static func == (lhs: Trip, rhs: Trip) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 #Preview {
     TimelineView()
         .environment(AuthViewModel())
-        .environment(PostStore())
+        .environment(TripStore())
 }

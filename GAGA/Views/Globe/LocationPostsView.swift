@@ -8,7 +8,7 @@ struct LocationPostsView: View {
     @State private var posts: [Post] = []
     @State private var isLoading = true
 
-    private static let heroAssets: [String: String] = [
+    static let heroAssets: [String: String] = [
         "日本": "hero-japan",
         "Japan": "hero-japan",
         "韓国": "hero-korea",
@@ -18,8 +18,11 @@ struct LocationPostsView: View {
         "中国": "hero-china",
         "China": "hero-china",
         "アメリカ": "hero-usa",
+        "アメリカ合衆国": "hero-usa",
         "United States": "hero-usa",
         "United States of America": "hero-usa",
+        "US": "hero-usa",
+        "USA": "hero-usa",
         "シンガポール": "hero-singapore",
         "Singapore": "hero-singapore",
         "タイ": "hero-thailand",
@@ -228,9 +231,9 @@ private struct LocationPostCard: View {
                     .foregroundStyle(.white.opacity(0.9))
             }
 
-            HStack(spacing: 16) {
-                Label("\(post.likesCount)", systemImage: "heart")
-                Label("\(post.commentsCount)", systemImage: "bubble.right")
+            HStack(spacing: 6) {
+                Image(systemName: "mappin")
+                Text(post.location.name)
             }
             .font(.caption)
             .foregroundStyle(.white.opacity(0.6))
