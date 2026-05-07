@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TripMenuSheet: View {
     let trip: Trip
+    @State private var showEditTrip = false
 
     var body: some View {
         NavigationStack {
@@ -12,11 +13,21 @@ struct TripMenuSheet: View {
                     LabeledContent("出発日", value: trip.departureDate.formatted(date: .abbreviated, time: .omitted))
                     LabeledContent("帰国日", value: trip.returnDate.formatted(date: .abbreviated, time: .omitted))
                     LabeledContent("ステータス", value: trip.status.rawValue)
+
+                    Button {
+                        showEditTrip = true
+                    } label: {
+                        Label("旅行を編集", systemImage: "pencil")
+                    }
                 }
 
                 Section("スケジュール") {
                     if trip.schedule.isEmpty {
-                        ContentUnavailableView("スケジュール未登録", systemImage: "calendar.badge.plus", description: Text("日程ごとの予定を追加しましょう"))
+                        GAGAEmptyState(
+                            icon: "calendar.badge.plus",
+                            title: "スケジュール未登録",
+                            description: "日程ごとの予定を追加しましょう"
+                        )
                     } else {
                         ForEach(trip.schedule) { day in
                             VStack(alignment: .leading, spacing: 4) {
@@ -36,21 +47,12 @@ struct TripMenuSheet: View {
                         }
                     }
                 }
-
-                Section("持ち物チェックリスト") {
-                    NavigationLink("チェックリストを見る") {
-                        ChecklistView(
-                        tripId: trip.id,
-                        destinations: trip.destinations,
-                        departureDate: trip.departureDate,
-                        returnDate: trip.returnDate,
-                        schedule: trip.schedule
-                    )
-                    }
-                }
             }
             .navigationTitle(trip.title)
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showEditTrip) {
+                CreateTripView(editingTrip: trip)
+            }
         }
         .presentationDetents([.medium, .large])
     }

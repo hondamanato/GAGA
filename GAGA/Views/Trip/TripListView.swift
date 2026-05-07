@@ -48,10 +48,12 @@ struct TripListView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if tripStore.trips.isEmpty {
-            ContentUnavailableView(
-                "旅行がまだありません",
-                systemImage: "airplane",
-                description: Text("右上の + から最初の旅行を作成しましょう")
+            GAGAEmptyState(
+                icon: "airplane.departure",
+                title: "旅行がまだありません",
+                description: "右上の + から最初の旅行を作成しましょう",
+                ctaTitle: "最初の旅行を作成",
+                ctaAction: { showCreateTrip = true }
             )
         } else {
             ScrollView {

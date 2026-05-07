@@ -13,13 +13,15 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: GAGATheme.spacingSM) {
                     header
                     statsRow
+                    if visitedCountriesCount > 0 {
+                        visitedCountriesChips
+                    }
                     tabBar
                     tabContent
                 }
-                .padding(.vertical, 12)
             }
             .navigationTitle("プロフィール")
             .toolbar {
@@ -44,9 +46,34 @@ struct ProfileView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 16) {
-            GAGAAvatar(url: user?.avatarURL, size: 72)
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 0) {
+            // Cover photo banner
+            ZStack(alignment: .bottomLeading) {
+                if let urlStr = user?.coverPhotoURL, let url = URL(string: urlStr) {
+                    CachedAsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        coverFallback
+                    }
+                } else {
+                    coverFallback
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 160)
+            .clipped()
+
+            // Avatar overlapping banner
+            HStack {
+                GAGAAvatar(url: user?.avatarURL, size: 72)
+                    .background(Circle().fill(.background).padding(-4))
+                    .offset(y: -36)
+                Spacer()
+            }
+            .padding(.horizontal, GAGATheme.spacingMD)
+
+            // Name and bio
+            VStack(alignment: .leading, spacing: GAGATheme.spacingXS) {
                 Text(user?.displayName ?? "ゲストユーザー")
                     .font(GAGATheme.titleFont)
                 if let bio = user?.bio, !bio.isEmpty {
@@ -59,15 +86,27 @@ struct ProfileView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, GAGATheme.spacingMD)
+            .offset(y: -24)
         }
-        .padding(.horizontal)
+    }
+
+    private var coverFallback: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [GAGATheme.deepNavy, GAGATheme.coral.opacity(0.3)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
     }
 
     private var statsRow: some View {
-        HStack {
+        HStack(spacing: 0) {
+            StatItem(value: "\(tripStore.trips.count)", label: "旅行")
             StatItem(value: "\(visitedCountriesCount)", label: "国")
-            Divider().frame(height: 32)
             if let uid = authViewModel.firebaseUID {
                 NavigationLink {
                     FollowListView(userId: uid, initialTab: .followers)
@@ -78,7 +117,6 @@ struct ProfileView: View {
             } else {
                 StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
             }
-            Divider().frame(height: 32)
             if let uid = authViewModel.firebaseUID {
                 NavigationLink {
                     FollowListView(userId: uid, initialTab: .following)
@@ -90,7 +128,26 @@ struct ProfileView: View {
                 StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, GAGATheme.spacingMD)
+    }
+
+    private var visitedCountriesChips: some View {
+        let countries = Array(Set(allVisitedCountries)).sorted()
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: GAGATheme.spacingSM) {
+                ForEach(countries, id: \.self) { country in
+                    Text("\(flagEmoji(for: country)) \(country)")
+                        .font(GAGATheme.captionFont)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .stroke(GAGATheme.accentGradient, lineWidth: 1.5)
+                        )
+                }
+            }
+            .padding(.horizontal, GAGATheme.spacingMD)
+        }
     }
 
     private var visitedCountriesCount: Int {
@@ -104,6 +161,19 @@ struct ProfileView: View {
             }
         }
         return countries.count
+    }
+
+    private var allVisitedCountries: [String] {
+        var countries: [String] = []
+        for trip in tripStore.trips {
+            let origin = trip.origin.country.trimmingCharacters(in: .whitespaces)
+            if !origin.isEmpty { countries.append(origin) }
+            for dest in trip.destinations {
+                let c = dest.country.trimmingCharacters(in: .whitespaces)
+                if !c.isEmpty { countries.append(c) }
+            }
+        }
+        return countries
     }
 
     private var tabBar: some View {
@@ -145,26 +215,22 @@ struct ProfileView: View {
                 GlobeView()
                     .frame(height: 400)
             case .suitcase:
-                ContentUnavailableView(
-                    "3Dスーツケース",
-                    systemImage: "suitcase.fill",
-                    description: Text("近日公開予定")
-                )
-                .frame(height: 400)
+                SuitcaseView(visitedCountries: allVisitedCountries)
             case .list:
                 tripListContent
             }
         }
         .id(selectedTab)
+        .sensoryFeedback(.selection, trigger: selectedTab)
     }
 
     @ViewBuilder
     private var tripListContent: some View {
         if tripStore.trips.isEmpty {
-            ContentUnavailableView(
-                "旅行がまだありません",
-                systemImage: "airplane",
-                description: Text("旅行タブから作成しましょう")
+            GAGAEmptyState(
+                icon: "airplane",
+                title: "旅行がまだありません",
+                description: "旅行タブから作成しましょう"
             )
             .frame(height: 400)
         } else {
@@ -300,9 +366,10 @@ private struct StatItem: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.headline)
+                .font(.system(.title2, design: .rounded, weight: .bold))
+                .foregroundStyle(GAGATheme.accentGradient)
             Text(label)
-                .font(.caption2)
+                .font(GAGATheme.captionFont)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)

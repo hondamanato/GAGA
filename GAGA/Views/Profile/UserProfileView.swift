@@ -5,16 +5,24 @@ struct UserProfileView: View {
 
     @Environment(AuthViewModel.self) private var authViewModel
     @State private var store = UserProfileStore()
+    @State private var isBlocked = false
+    @State private var showBlockConfirm = false
 
+    private let userService = UserService()
     private let gridColumns = [
-        GridItem(.flexible(), spacing: 2),
-        GridItem(.flexible(), spacing: 2),
-        GridItem(.flexible(), spacing: 2)
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
     ]
 
     private var isMe: Bool {
         authViewModel.firebaseUID == userId
     }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        return f
+    }()
 
     var body: some View {
         ScrollView {
@@ -25,14 +33,43 @@ struct UserProfileView: View {
                     followButton
                 }
                 Divider()
-                postsGrid
+                tripsGrid
             }
             .padding(.top, 8)
         }
         .navigationTitle(store.user?.displayName ?? "プロフィール")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !isMe, authViewModel.firebaseUID != nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button(role: .destructive) {
+                            showBlockConfirm = true
+                        } label: {
+                            Label(isBlocked ? "ブロック解除" : "ブロック", systemImage: isBlocked ? "person.badge.plus" : "person.fill.xmark")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                }
+            }
+        }
+        .confirmationDialog(
+            isBlocked ? "ブロックを解除しますか？" : "このユーザーをブロックしますか？",
+            isPresented: $showBlockConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(isBlocked ? "ブロック解除" : "ブロック", role: isBlocked ? nil : .destructive) {
+                Task { await toggleBlock() }
+            }
+        } message: {
+            Text(isBlocked ? "このユーザーのコンテンツが再び表示されます。" : "このユーザーの投稿が非表示になります。")
+        }
         .task {
             await store.load(userId: userId, currentUserId: authViewModel.firebaseUID)
+            if let uid = authViewModel.firebaseUID, uid != userId {
+                isBlocked = (try? await userService.isBlocked(currentUserId: uid, targetUserId: userId)) ?? false
+            }
         }
         .overlay {
             if store.isLoading && store.user == nil {
@@ -53,35 +90,71 @@ struct UserProfileView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 8) {
-            Circle()
-                .fill(.gray.opacity(0.3))
-                .frame(width: 88, height: 88)
-                .overlay {
-                    Image(systemName: "person.fill")
-                        .font(.largeTitle)
-                        .foregroundStyle(.gray)
+        VStack(spacing: 0) {
+            // Cover photo
+            ZStack {
+                if let urlStr = store.user?.coverPhotoURL, let url = URL(string: urlStr) {
+                    CachedAsyncImage(url: url) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        userCoverFallback
+                    }
+                } else {
+                    userCoverFallback
                 }
-            Text(store.user?.displayName ?? "")
-                .font(.title3)
-                .fontWeight(.semibold)
-            if let bio = store.user?.bio, !bio.isEmpty {
-                Text(bio)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 140)
+            .clipped()
+
+            GAGAAvatar(url: store.user?.avatarURL, size: 88)
+                .background(Circle().fill(.background).padding(-4))
+                .offset(y: -44)
+
+            VStack(spacing: GAGATheme.spacingXS) {
+                Text(store.user?.displayName ?? "")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                if let bio = store.user?.bio, !bio.isEmpty {
+                    Text(bio)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+            }
+            .offset(y: -32)
         }
+    }
+
+    private var userCoverFallback: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [GAGATheme.deepNavy, GAGATheme.coral.opacity(0.3)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
     }
 
     private var statsRow: some View {
         HStack {
-            stat(value: store.posts.count, label: "投稿")
+            stat(value: store.trips.count, label: "旅行")
             Divider().frame(height: 32)
-            stat(value: store.user?.followersCount ?? 0, label: "フォロワー")
+            NavigationLink {
+                FollowListView(userId: userId, initialTab: .followers)
+            } label: {
+                stat(value: store.user?.followersCount ?? 0, label: "フォロワー")
+            }
+            .buttonStyle(.plain)
             Divider().frame(height: 32)
-            stat(value: store.user?.followingCount ?? 0, label: "フォロー中")
+            NavigationLink {
+                FollowListView(userId: userId, initialTab: .following)
+            } label: {
+                stat(value: store.user?.followingCount ?? 0, label: "フォロー中")
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 24)
     }
@@ -103,35 +176,80 @@ struct UserProfileView: View {
             Task { await store.toggleFollow(currentUserId: uid) }
         } label: {
             Text(store.isFollowing ? "フォロー中" : "フォローする")
-                .fontWeight(.semibold)
+                .font(GAGATheme.headlineFont)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(store.isFollowing ? Color.gray.opacity(0.2) : Color.blue)
+                .background {
+                    if store.isFollowing {
+                        Color.gray.opacity(0.2)
+                    } else {
+                        GAGATheme.accentGradient
+                    }
+                }
                 .foregroundStyle(store.isFollowing ? Color.primary : Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: GAGATheme.buttonRadius))
+                .animation(.spring(duration: 0.3), value: store.isFollowing)
         }
         .padding(.horizontal)
     }
 
-    private var postsGrid: some View {
-        LazyVGrid(columns: gridColumns, spacing: 2) {
-            ForEach(store.posts) { post in
-                AsyncImage(url: URL(string: post.imageURL)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                    case .failure:
-                        Color.gray.opacity(0.15)
-                            .overlay {
-                                Image(systemName: "photo").foregroundStyle(.gray)
+    private var tripsGrid: some View {
+        LazyVGrid(columns: gridColumns, spacing: 12) {
+            ForEach(store.trips) { trip in
+                NavigationLink(value: trip) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        if let urlStr = trip.coverImageURL, let url = URL(string: urlStr) {
+                            CachedAsyncImage(url: url) { image in
+                                image.resizable().scaledToFill()
+                            } placeholder: {
+                                tripPlaceholder
                             }
-                    default:
-                        Color.gray.opacity(0.1)
+                            .frame(height: 100)
+                            .clipped()
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            tripPlaceholder
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+
+                        Text(trip.title)
+                            .font(GAGATheme.captionFont)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .foregroundStyle(.primary)
+
+                        Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .frame(height: 120)
-                .clipped()
+                .buttonStyle(.plain)
             }
         }
+        .padding(.horizontal)
+    }
+
+    private func toggleBlock() async {
+        guard let uid = authViewModel.firebaseUID else { return }
+        do {
+            if isBlocked {
+                try await userService.unblockUser(currentUserId: uid, targetUserId: userId)
+            } else {
+                try await userService.blockUser(currentUserId: uid, targetUserId: userId)
+            }
+            isBlocked.toggle()
+        } catch {
+            store.errorMessage = error.localizedDescription
+        }
+    }
+
+    private var tripPlaceholder: some View {
+        Rectangle()
+            .fill(GAGATheme.deepNavy.opacity(0.08))
+            .frame(height: 100)
+            .overlay {
+                Image(systemName: "airplane")
+                    .foregroundStyle(GAGATheme.coral.opacity(0.4))
+            }
     }
 }

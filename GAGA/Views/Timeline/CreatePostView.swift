@@ -9,140 +9,107 @@ struct CreatePostView: View {
     @Environment(TripStore.self) private var tripStore
     @Environment(PostStore.self) private var postStore
 
+    @State private var step = 0
     @State private var pickerItem: PhotosPickerItem?
     @State private var imageData: Data?
+    @State private var uiImage: UIImage?
     @State private var caption = ""
     @State private var location: Location = CityCatalog.all[0]
     @State private var selectedTripId: String?
     @State private var photoDate: Date?
+    @State private var selectedDate: Date = .now
     @State private var autoLocationName: String?
 
     var initialTripId: String?
+    var initialDate: Date?
     @State private var isPosting = false
+    @State private var showSuccessToast: String?
     @State private var errorMessage: String?
 
+    private var selectedTrip: Trip? {
+        tripStore.trips.first { $0.id == selectedTripId }
+    }
+
     private var canPost: Bool {
-        imageData != nil && !isPosting
+        imageData != nil && !isPosting && selectedTripId != nil
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("写真") {
-                    PhotosPicker(selection: $pickerItem, matching: .images) {
-                        if let imageData, let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 240)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        } else {
-                            HStack {
-                                Image(systemName: "photo.badge.plus")
-                                Text("写真を選択")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 120)
-                            .background(.gray.opacity(0.15))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
+            ZStack {
+                if let uiImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .ignoresSafeArea()
+                        .blur(radius: 40)
+                        .overlay(.black.opacity(0.4))
+                } else {
+                    GAGATheme.accentGradient
+                        .opacity(0.15)
+                        .ignoresSafeArea()
                 }
 
-                Section("キャプション") {
-                    TextField("旅の思い出を書きましょう", text: $caption, axis: .vertical)
-                        .lineLimit(3...6)
-                }
-
-                Section("場所") {
-                    if let autoLocationName {
-                        HStack {
-                            Image(systemName: "location.fill")
-                                .foregroundStyle(.blue)
-                            Text(autoLocationName)
-                                .foregroundStyle(.secondary)
-                                .font(.caption)
+                VStack(spacing: 0) {
+                    HStack(spacing: 8) {
+                        ForEach(0..<2, id: \.self) { i in
+                            Capsule()
+                                .fill(i <= step ? GAGATheme.coral : Color.gray.opacity(0.3))
+                                .frame(height: 3)
                         }
                     }
-                    Picker("場所", selection: $location) {
-                        ForEach(CityCatalog.all, id: \.self) { city in
-                            Text("\(city.name) (\(city.country))").tag(city)
-                        }
-                    }
-                }
+                    .padding(.horizontal, 40)
+                    .padding(.top, 8)
 
-                if let photoDate {
-                    Section("撮影日時") {
-                        HStack {
-                            Image(systemName: "camera")
-                                .foregroundStyle(.secondary)
-                            Text(photoDate.formatted(date: .abbreviated, time: .shortened))
-                        }
-                    }
-                }
-
-                if !tripStore.trips.isEmpty {
-                    Section("旅行に紐付け (任意)") {
-                        Picker("旅行", selection: $selectedTripId) {
-                            Text("紐付けなし").tag(String?.none)
-                            ForEach(tripStore.trips) { trip in
-                                Text(trip.title).tag(String?.some(trip.id))
-                            }
-                        }
+                    if step == 0 {
+                        photoStep
+                            .transition(.push(from: .leading))
+                    } else {
+                        detailsStep
+                            .transition(.push(from: .trailing))
                     }
                 }
             }
-            .navigationTitle("投稿を作成")
+            .animation(.spring(duration: 0.35), value: step)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") { dismiss() }
+                        .foregroundStyle(.primary)
                         .disabled(isPosting)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("投稿") {
-                        Task { await post() }
-                    }
-                    .disabled(!canPost)
+                ToolbarItem(placement: .principal) {
+                    Text(step == 0 ? "写真を選ぶ" : "詳細を入力")
+                        .font(GAGATheme.headlineFont)
                 }
+                ToolbarItem(placement: .confirmationAction) {
+                    if step == 0 {
+                        Button("次へ") {
+                            step = 1
+                        }
+                        .disabled(imageData == nil)
+                        .fontWeight(.semibold)
+                    } else {
+                        Button("投稿") {
+                            Task { await post() }
+                        }
+                        .disabled(!canPost)
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+            .onAppear {
+                if let initialTripId { selectedTripId = initialTripId }
+                if let initialDate { selectedDate = initialDate }
+            }
+            .onChange(of: pickerItem) { _, newItem in
+                Task { await loadPhoto(newItem) }
             }
             .overlay {
                 if isPosting {
                     ProgressView("アップロード中...")
                         .padding(20)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
-                }
-            }
-            .onAppear {
-                if let initialTripId { selectedTripId = initialTripId }
-            }
-            .onChange(of: pickerItem) { _, newItem in
-                Task {
-                    guard let newItem else { return }
-
-                    // 画像データを読み込み
-                    if let data = try? await newItem.loadTransferable(type: Data.self) {
-                        imageData = downsample(data, maxDimension: 1600)
-                    }
-
-                    // PHAsset から撮影日時・位置を取得
-                    if let assetId = newItem.itemIdentifier {
-                        let result = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
-                        if let asset = result.firstObject {
-                            if let date = asset.creationDate {
-                                photoDate = date
-                            }
-                            if let coordinate = asset.location?.coordinate,
-                               CLLocationCoordinate2DIsValid(coordinate) {
-                                // 最も近い CityCatalog の都市を自動選択
-                                let nearest = findNearestCity(to: coordinate)
-                                location = nearest
-                                // 逆ジオコーディングで地名を取得
-                                reverseGeocode(coordinate)
-                            }
-                        }
-                    }
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
                 }
             }
             .alert(
@@ -156,22 +123,244 @@ struct CreatePostView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+            .gagaToast($showSuccessToast)
+            .sensoryFeedback(.success, trigger: showSuccessToast)
+        }
+    }
+
+    // MARK: - Step 1: Photo Selection
+
+    private var photoStep: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            PhotosPicker(selection: $pickerItem, matching: .images) {
+                if let uiImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: UIScreen.main.bounds.width * 1.1)
+                        .clipShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
+                        .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
+                } else {
+                    VStack(spacing: 16) {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 48))
+                            .foregroundStyle(GAGATheme.accentGradient)
+                        Text("タップして写真を選択")
+                            .font(GAGATheme.headlineFont)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: UIScreen.main.bounds.width * 1.1)
+                    .background(.gray.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
+                }
+            }
+            .padding(.horizontal, 20)
+
+            if let photoDate {
+                HStack(spacing: 6) {
+                    Image(systemName: "camera")
+                        .foregroundStyle(GAGATheme.coral)
+                    Text(photoDate.formatted(date: .abbreviated, time: .shortened))
+                        .font(GAGATheme.captionFont)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Step 2: Details
+
+    private var detailsStep: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                if let uiImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .padding(.horizontal, 20)
+                }
+
+                // Caption
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("キャプション")
+                        .font(GAGATheme.captionFont)
+                        .foregroundStyle(.secondary)
+                    TextField("旅の思い出を書きましょう", text: $caption, axis: .vertical)
+                        .lineLimit(3...6)
+                        .font(GAGATheme.bodyFont)
+                        .padding(14)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .padding(.horizontal, 20)
+
+                // Location
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("場所")
+                        .font(GAGATheme.captionFont)
+                        .foregroundStyle(.secondary)
+
+                    if let autoLocationName {
+                        HStack(spacing: 6) {
+                            Image(systemName: "location.fill")
+                                .foregroundStyle(GAGATheme.coral)
+                            Text(autoLocationName)
+                                .font(GAGATheme.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(CityCatalog.all, id: \.self) { city in
+                                Button {
+                                    location = city
+                                } label: {
+                                    Text("\(flagEmoji(for: city.country)) \(city.name)")
+                                        .font(GAGATheme.captionFont)
+                                        .fontWeight(location == city ? .semibold : .regular)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            location == city
+                                            ? AnyShapeStyle(GAGATheme.accentGradient)
+                                            : AnyShapeStyle(Color.gray.opacity(0.15))
+                                        )
+                                        .foregroundStyle(location == city ? .white : .primary)
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                // Trip selection (required)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("旅行プラン")
+                        .font(GAGATheme.captionFont)
+                        .foregroundStyle(.secondary)
+
+                    if tripStore.trips.isEmpty {
+                        Text("先に旅行プランを作成してください")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.tertiary)
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(tripStore.trips) { trip in
+                                    Button {
+                                        selectedTripId = trip.id
+                                    } label: {
+                                        Text(trip.title)
+                                            .font(GAGATheme.captionFont)
+                                            .fontWeight(selectedTripId == trip.id ? .semibold : .regular)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                selectedTripId == trip.id
+                                                ? AnyShapeStyle(GAGATheme.accentGradient)
+                                                : AnyShapeStyle(Color.gray.opacity(0.15))
+                                            )
+                                            .foregroundStyle(selectedTripId == trip.id ? .white : .primary)
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                // Date selection
+                if let trip = selectedTrip {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("日付")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.secondary)
+                        DatePicker(
+                            "日付",
+                            selection: $selectedDate,
+                            in: trip.departureDate...trip.returnDate,
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        .datePickerStyle(.compact)
+                    }
+                    .padding(.horizontal, 20)
+                }
+
+                // Back button
+                Button {
+                    step = 0
+                } label: {
+                    HStack {
+                        Image(systemName: "chevron.left")
+                        Text("写真を変更")
+                    }
+                    .font(GAGATheme.captionFont)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.top, 8)
+            }
+            .padding(.vertical, 16)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func loadPhoto(_ item: PhotosPickerItem?) async {
+        guard let item else { return }
+
+        if let data = try? await item.loadTransferable(type: Data.self) {
+            imageData = downsample(data, maxDimension: 1600)
+            if let imageData {
+                uiImage = UIImage(data: imageData)
+            }
+        }
+
+        if let assetId = item.itemIdentifier {
+            let result = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
+            if let asset = result.firstObject {
+                if let date = asset.creationDate {
+                    photoDate = date
+                    selectedDate = date
+                }
+                if let coordinate = asset.location?.coordinate,
+                   CLLocationCoordinate2DIsValid(coordinate) {
+                    location = findNearestCity(to: coordinate)
+                    reverseGeocode(coordinate)
+                }
+            }
         }
     }
 
     private func post() async {
-        guard let uid = authViewModel.firebaseUID, let data = imageData else { return }
+        guard let uid = authViewModel.firebaseUID,
+              let data = imageData,
+              let tripId = selectedTripId else { return }
         isPosting = true
         defer { isPosting = false }
         do {
             try await postStore.create(
                 imageData: data,
                 userId: uid,
-                tripId: selectedTripId,
+                tripId: tripId,
                 location: location,
                 caption: caption.trimmingCharacters(in: .whitespacesAndNewlines),
-                createdAt: photoDate ?? .now
+                createdAt: photoDate ?? selectedDate
             )
+            showSuccessToast = "投稿しました ✈️"
+            try? await Task.sleep(for: .seconds(1))
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
@@ -223,7 +412,7 @@ struct CreatePostView: View {
 }
 
 #Preview {
-    CreatePostView()
+    CreatePostView(initialTripId: "test")
         .environment(AuthViewModel())
         .environment(TripStore())
         .environment(PostStore())

@@ -146,13 +146,11 @@ struct LocationPostsView: View {
                 .tint(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if posts.isEmpty {
-            ContentUnavailableView {
-                Label("投稿がまだありません", systemImage: "photo.on.rectangle.angled")
-                    .foregroundStyle(.white)
-            } description: {
-                Text("\(tappedLabel.name)の投稿はまだありません")
-                    .foregroundStyle(.white.opacity(0.7))
-            }
+            GAGAEmptyState(
+                icon: "photo.on.rectangle.angled",
+                title: "投稿がまだありません",
+                description: "\(tappedLabel.name)の投稿はまだありません"
+            )
         } else {
             ScrollView {
                 LazyVStack(spacing: 16) {

@@ -6,11 +6,15 @@ struct TimelineView: View {
     @Environment(TripStore.self) private var tripStore
 
     @State private var userCache: [String: AppUser] = [:]
+    @State private var commentTrip: Trip?
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("タイムライン")
+                .sheet(item: $commentTrip) { trip in
+                    CommentsView(trip: trip)
+                }
                 .refreshable {
                     await tripStore.loadTimeline(currentUserId: authViewModel.firebaseUID)
                     await loadUsers(for: tripStore.timeline)
@@ -43,25 +47,43 @@ struct TimelineView: View {
     @ViewBuilder
     private var content: some View {
         if tripStore.isLoading && tripStore.timeline.isEmpty {
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Skeleton loading
+            ScrollView {
+                LazyVStack(spacing: 20) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: GAGATheme.cardRadius)
+                            .fill(Color.gray.opacity(0.12))
+                            .frame(height: 220)
+                            .gagaSkeleton(true)
+                    }
+                }
+                .padding(.horizontal, GAGATheme.spacingMD)
+                .padding(.vertical, GAGATheme.spacingSM)
+            }
         } else if tripStore.timeline.isEmpty {
-            ContentUnavailableView(
-                "旅行プランがまだありません",
-                systemImage: "airplane",
-                description: Text("旅行タブから最初のプランを作ってみましょう")
+            GAGAEmptyState(
+                icon: "airplane",
+                title: "旅行プランがまだありません",
+                description: "旅行タブから最初のプランを作ってみましょう"
             )
         } else {
             ScrollView {
                 LazyVStack(spacing: 20) {
-                    ForEach(tripStore.timeline) { trip in
+                    ForEach(Array(tripStore.timeline.enumerated()), id: \.element.id) { index, trip in
                         NavigationLink(value: trip) {
                             TimelineTripCard(
                                 trip: trip,
-                                user: userCache[trip.userId]
+                                user: userCache[trip.userId],
+                                isLiked: tripStore.likedTripIds.contains(trip.id),
+                                onLikeTap: {
+                                    guard let uid = authViewModel.firebaseUID else { return }
+                                    Task { await tripStore.toggleLike(trip: trip, userId: uid) }
+                                },
+                                onCommentTap: { commentTrip = trip }
                             )
                         }
                         .buttonStyle(.plain)
+                        .gagaStagger(index: index)
                         .onAppear {
                             if trip.id == tripStore.timeline.last?.id {
                                 Task {
@@ -77,8 +99,8 @@ struct TimelineView: View {
                             .padding()
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, GAGATheme.spacingMD)
+                .padding(.vertical, GAGATheme.spacingSM)
             }
         }
     }
@@ -99,6 +121,11 @@ struct TimelineView: View {
 private struct TimelineTripCard: View {
     let trip: Trip
     let user: AppUser?
+    var isLiked: Bool = false
+    var onLikeTap: (() -> Void)? = nil
+    var onCommentTap: (() -> Void)? = nil
+
+    @State private var showHeartOverlay = false
 
     private var routeText: String {
         let names = ([trip.origin] + trip.destinations).map {
@@ -114,74 +141,147 @@ private struct TimelineTripCard: View {
     }()
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            // Background image
-            cardBackground
-                .frame(maxWidth: .infinity)
-                .frame(height: 180)
-                .clipped()
+        VStack(spacing: 0) {
+            // Card image area
+            ZStack(alignment: .bottomLeading) {
+                // Background image
+                cardBackground
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 180)
+                    .clipped()
 
-            // Dark gradient
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
-                startPoint: .top,
-                endPoint: .bottom
+                // Dark gradient
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.7)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+
+                // Top-left: user avatar
+                VStack {
+                    HStack {
+                        GAGAAvatar(url: user?.avatarURL, size: 32)
+                            .shadow(color: .black.opacity(0.4), radius: 3)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(user?.displayName ?? "Traveler")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.white)
+                            Text(trip.createdAt.formatted(.relative(presentation: .named)))
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
+                        Spacer()
+                        Text(trip.status.rawValue)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(GAGATheme.tripStatusColor(trip.status).opacity(0.3), in: Capsule())
+                            .foregroundStyle(.white)
+                    }
+                    .padding(12)
+                    Spacer()
+                }
+
+                // Bottom: trip info
+                VStack(alignment: .leading, spacing: 6) {
+                    Spacer()
+                    Text(trip.title)
+                        .font(GAGATheme.headlineFont)
+                        .foregroundStyle(.white)
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.caption2)
+                        Text(routeText)
+                            .font(GAGATheme.captionFont)
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(.white.opacity(0.85))
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.caption2)
+                        Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
+                            .font(GAGATheme.captionFont)
+                    }
+                    .foregroundStyle(.white.opacity(0.7))
+                }
+                .padding(14)
+
+                // Double-tap heart overlay
+                if showHeartOverlay {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 60))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 8)
+                        .transition(.scale.combined(with: .opacity))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .clipShape(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: GAGATheme.cardRadius,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: GAGATheme.cardRadius
+                )
+            )
+            .simultaneousGesture(
+                TapGesture(count: 2).onEnded {
+                    if !isLiked { onLikeTap?() }
+                    withAnimation(GAGATheme.springBounce) { showHeartOverlay = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        withAnimation { showHeartOverlay = false }
+                    }
+                }
             )
 
-            // Top-left: user avatar
-            VStack {
-                HStack {
-                    GAGAAvatar(url: user?.avatarURL, size: 32)
-                        .shadow(color: .black.opacity(0.4), radius: 3)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(user?.displayName ?? "Traveler")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                        Text(trip.createdAt.formatted(.relative(presentation: .named)))
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.7))
+            // Reaction bar
+            HStack(spacing: GAGATheme.spacingLG) {
+                HeartBounceView(
+                    isLiked: isLiked,
+                    count: trip.likesCount,
+                    action: { onLikeTap?() }
+                )
+
+                Button {
+                    onCommentTap?()
+                } label: {
+                    HStack(spacing: GAGATheme.spacingXS) {
+                        Image(systemName: "bubble.right")
+                        if trip.commentsCount > 0 {
+                            Text("\(trip.commentsCount)")
+                                .font(GAGATheme.captionFont)
+                        }
                     }
-                    Spacer()
-                    Text(trip.status.rawValue)
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(GAGATheme.tripStatusColor(trip.status).opacity(0.3), in: Capsule())
-                        .foregroundStyle(.white)
+                    .foregroundStyle(.secondary)
                 }
-                .padding(12)
+                .buttonStyle(.plain)
+
                 Spacer()
-            }
 
-            // Bottom: trip info
-            VStack(alignment: .leading, spacing: 6) {
-                Spacer()
-                Text(trip.title)
-                    .font(GAGATheme.headlineFont)
-                    .foregroundStyle(.white)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.caption2)
-                    Text(routeText)
-                        .font(GAGATheme.captionFont)
-                        .lineLimit(1)
+                ShareLink(item: trip.title) {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(.secondary)
                 }
-                .foregroundStyle(.white.opacity(0.85))
-
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.caption2)
-                    Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
-                        .font(GAGATheme.captionFont)
-                }
-                .foregroundStyle(.white.opacity(0.7))
             }
-            .padding(14)
+            .font(.subheadline)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background {
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 0,
+                    bottomLeadingRadius: GAGATheme.cardRadius,
+                    bottomTrailingRadius: GAGATheme.cardRadius,
+                    topTrailingRadius: 0
+                )
+                .fill(.ultraThinMaterial)
+            }
         }
-        .clipShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
+        .gagaCard()
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: isLiked)
     }
 
     @ViewBuilder

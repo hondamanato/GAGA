@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct CommentsView: View {
-    let post: Post
+    let trip: Trip
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthViewModel.self) private var authViewModel
-    @Environment(PostStore.self) private var postStore
+    @Environment(TripStore.self) private var tripStore
 
     @State private var comments: [Comment] = []
     @State private var userCache: [String: AppUser] = [:]
@@ -14,7 +14,7 @@ struct CommentsView: View {
     @State private var isSending = false
     @State private var errorMessage: String?
 
-    private let postService = PostService()
+    private let tripService = TripService()
     private let userService = UserService()
 
     var body: some View {
@@ -52,10 +52,10 @@ struct CommentsView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if comments.isEmpty {
-            ContentUnavailableView(
-                "まだコメントがありません",
-                systemImage: "bubble.right",
-                description: Text("最初のコメントを書いてみましょう")
+            GAGAEmptyState(
+                icon: "bubble.right",
+                title: "まだコメントがありません",
+                description: "最初のコメントを書いてみましょう"
             )
         } else {
             List {
@@ -98,7 +98,7 @@ struct CommentsView: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            let fetched = try await postService.fetchComments(postId: post.id)
+            let fetched = try await tripService.fetchComments(tripId: trip.id)
             comments = fetched
             let uniqueUserIds = Array(Set(fetched.map(\.userId)))
             if !uniqueUserIds.isEmpty {
@@ -115,7 +115,7 @@ struct CommentsView: View {
         defer { isSending = false }
         let text = newText
         do {
-            try await postStore.addComment(to: post, userId: uid, text: text)
+            try await tripStore.addComment(to: trip, userId: uid, text: text)
             newText = ""
             await load()
         } catch {
@@ -130,14 +130,7 @@ private struct CommentRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Circle()
-                .fill(.gray.opacity(0.3))
-                .frame(width: 32, height: 32)
-                .overlay {
-                    Image(systemName: "person.fill")
-                        .font(.caption)
-                        .foregroundStyle(.gray)
-                }
+            GAGAAvatar(url: user?.avatarURL, size: 32)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(user?.displayName ?? "Traveler")
