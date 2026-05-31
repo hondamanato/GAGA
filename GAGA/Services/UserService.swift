@@ -65,6 +65,61 @@ struct UserService {
         try await batch.commit()
     }
 
+    func fetchFollowers(userId: String) async throws -> [AppUser] {
+        let snapshot = try await users.document(userId)
+            .collection("followers")
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+        let ids = snapshot.documents.map(\.documentID)
+        guard !ids.isEmpty else { return [] }
+        return try await fetchUsers(ids: ids)
+            .values.sorted { ($0.displayName) < ($1.displayName) }
+    }
+
+    func fetchFollowing(userId: String) async throws -> [AppUser] {
+        let snapshot = try await users.document(userId)
+            .collection("following")
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+        let ids = snapshot.documents.map(\.documentID)
+        guard !ids.isEmpty else { return [] }
+        return try await fetchUsers(ids: ids)
+            .values.sorted { ($0.displayName) < ($1.displayName) }
+    }
+
+    // MARK: - Block
+
+    func blockUser(currentUserId: String, targetUserId: String) async throws {
+        guard currentUserId != targetUserId else { return }
+        let ref = users.document(currentUserId).collection("blocked").document(targetUserId)
+        try await ref.setData(["createdAt": FieldValue.serverTimestamp()])
+    }
+
+    func unblockUser(currentUserId: String, targetUserId: String) async throws {
+        let ref = users.document(currentUserId).collection("blocked").document(targetUserId)
+        try await ref.delete()
+    }
+
+    func fetchBlockedUsers(userId: String) async throws -> [AppUser] {
+        let snapshot = try await users.document(userId)
+            .collection("blocked")
+            .order(by: "createdAt", descending: true)
+            .getDocuments()
+        let ids = snapshot.documents.map(\.documentID)
+        guard !ids.isEmpty else { return [] }
+        return try await fetchUsers(ids: ids)
+            .values.sorted { $0.displayName < $1.displayName }
+    }
+
+    func isBlocked(currentUserId: String, targetUserId: String) async throws -> Bool {
+        let snapshot = try await users
+            .document(currentUserId)
+            .collection("blocked")
+            .document(targetUserId)
+            .getDocument()
+        return snapshot.exists
+    }
+
     func unfollow(currentUserId: String, targetUserId: String) async throws {
         guard currentUserId != targetUserId else { return }
         let db = Firestore.firestore()
@@ -79,6 +134,19 @@ struct UserService {
         batch.updateData(["followingCount": FieldValue.increment(Int64(-1))], forDocument: currentRef)
         batch.updateData(["followersCount": FieldValue.increment(Int64(-1))], forDocument: targetRef)
         try await batch.commit()
+    }
+
+    // MARK: - Stickers
+
+    func saveStickers(_ stickers: [PlacedSticker], userId: String) async throws {
+        let encoded = try stickers.map { try Firestore.Encoder().encode($0) }
+        try await users.document(userId).setData(["stickers": encoded], merge: true)
+    }
+
+    func fetchStickers(userId: String) async throws -> [PlacedSticker] {
+        let doc = try await users.document(userId).getDocument()
+        guard let array = doc.data()?["stickers"] as? [[String: Any]] else { return [] }
+        return try array.map { try Firestore.Decoder().decode(PlacedSticker.self, from: $0) }
     }
 }
 

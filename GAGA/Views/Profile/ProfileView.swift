@@ -14,7 +14,6 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: GAGATheme.spacingSM) {
-                    header
                     statsRow
                     if visitedCountriesCount > 0 {
                         visitedCountriesChips
@@ -23,8 +22,12 @@ struct ProfileView: View {
                     tabContent
                 }
             }
-            .navigationTitle("プロフィール")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text(user?.displayName ?? "Traveler")
+                        .font(GAGATheme.headlineFont)
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         SettingsView()
@@ -45,66 +48,10 @@ struct ProfileView: View {
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 0) {
-            // Cover photo banner
-            ZStack(alignment: .bottomLeading) {
-                if let urlStr = user?.coverPhotoURL, let url = URL(string: urlStr) {
-                    CachedAsyncImage(url: url) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        coverFallback
-                    }
-                } else {
-                    coverFallback
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 160)
-            .clipped()
-
-            // Avatar overlapping banner
-            HStack {
-                GAGAAvatar(url: user?.avatarURL, size: 72)
-                    .background(Circle().fill(.background).padding(-4))
-                    .offset(y: -36)
-                Spacer()
-            }
-            .padding(.horizontal, GAGATheme.spacingMD)
-
-            // Name and bio
-            VStack(alignment: .leading, spacing: GAGATheme.spacingXS) {
-                Text(user?.displayName ?? "ゲストユーザー")
-                    .font(GAGATheme.titleFont)
-                if let bio = user?.bio, !bio.isEmpty {
-                    Text(bio)
-                        .font(GAGATheme.captionFont)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("ログインして旅行を記録しよう")
-                        .font(GAGATheme.captionFont)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, GAGATheme.spacingMD)
-            .offset(y: -24)
-        }
-    }
-
-    private var coverFallback: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [GAGATheme.deepNavy, GAGATheme.coral.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-    }
-
     private var statsRow: some View {
         HStack(spacing: 0) {
+            GAGAAvatar(url: user?.avatarURL, size: 48)
+                .padding(.trailing, 8)
             StatItem(value: "\(tripStore.trips.count)", label: "旅行")
             StatItem(value: "\(visitedCountriesCount)", label: "国")
             if let uid = authViewModel.firebaseUID {
@@ -212,10 +159,14 @@ struct ProfileView: View {
         Group {
             switch selectedTab {
             case .globe:
-                GlobeView()
-                    .frame(height: 400)
+                GeometryReader { geo in
+                    GlobeView()
+                }
+                .frame(minHeight: 400)
             case .suitcase:
-                SuitcaseView(visitedCountries: allVisitedCountries)
+                if let uid = authViewModel.firebaseUID {
+                    SuitcaseView(visitedCountries: allVisitedCountries, userId: uid)
+                }
             case .list:
                 tripListContent
             }

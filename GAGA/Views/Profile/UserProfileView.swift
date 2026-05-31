@@ -18,6 +18,19 @@ struct UserProfileView: View {
         authViewModel.firebaseUID == userId
     }
 
+    private var allVisitedCountries: [String] {
+        var countries: [String] = []
+        for trip in store.trips {
+            let origin = trip.origin.country.trimmingCharacters(in: .whitespaces)
+            if !origin.isEmpty { countries.append(origin) }
+            for dest in trip.destinations {
+                let c = dest.country.trimmingCharacters(in: .whitespaces)
+                if !c.isEmpty { countries.append(c) }
+            }
+        }
+        return countries
+    }
+
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "M/d"
@@ -32,6 +45,11 @@ struct UserProfileView: View {
                 if !isMe, authViewModel.firebaseUID != nil {
                     followButton
                 }
+                SuitcaseView(
+                    visitedCountries: allVisitedCountries,
+                    userId: userId,
+                    readOnly: true
+                )
                 Divider()
                 tripsGrid
             }
