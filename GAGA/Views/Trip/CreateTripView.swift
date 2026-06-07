@@ -65,7 +65,7 @@ struct CreateTripView: View {
                                     Text("出発日")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
-                                    Text(departureDate.map { formatDateJP($0) } ?? "未設定")
+                                    Text(departureDate.map { formatDateJP($0) } ?? String(localized: "未設定"))
                                         .font(GAGATheme.headlineFont)
                                 }
                                 Spacer()
@@ -76,7 +76,7 @@ struct CreateTripView: View {
                                     Text("帰国日")
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
-                                    Text(returnDate.map { formatDateJP($0) } ?? "未設定")
+                                    Text(returnDate.map { formatDateJP($0) } ?? String(localized: "未設定"))
                                         .font(GAGATheme.headlineFont)
                                 }
                             }
@@ -155,7 +155,7 @@ struct CreateTripView: View {
                             HStack {
                                 Image(systemName: "plus.circle.fill")
                                     .foregroundStyle(GAGATheme.coral)
-                                Text(destinations.isEmpty ? "目的地を追加" : "他の場所を追加")
+                                Text(destinations.isEmpty ? LocalizedStringKey("目的地を追加") : LocalizedStringKey("他の場所を追加"))
                                     .font(GAGATheme.bodyFont)
                             }
                             .frame(maxWidth: .infinity)
@@ -168,7 +168,7 @@ struct CreateTripView: View {
                 }
                 .padding(20)
             }
-            .navigationTitle(isEditing ? "旅行を編集" : "旅行を作成")
+            .navigationTitle(isEditing ? LocalizedStringKey("旅行を編集") : LocalizedStringKey("旅行を作成"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -176,7 +176,7 @@ struct CreateTripView: View {
                         .disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isEditing ? "更新" : "作成") {
+                    Button(isEditing ? LocalizedStringKey("更新") : LocalizedStringKey("作成")) {
                         Task { await save() }
                     }
                     .fontWeight(.semibold)
@@ -242,18 +242,18 @@ struct CreateTripView: View {
 
     private func formatDateJP(_ date: Date) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ja_JP")
-        f.dateFormat = "M月d日"
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate("MMMd")
         return f.string(from: date)
     }
 
     private func save() async {
         guard let uid = authViewModel.firebaseUID else {
-            errorMessage = "サインインが必要です"
+            errorMessage = String(localized: "サインインが必要です")
             return
         }
         guard let dep = departureDate, let ret = returnDate else {
-            errorMessage = "日程を設定してください"
+            errorMessage = String(localized: "日程を設定してください")
             return
         }
         isSaving = true

@@ -15,9 +15,9 @@ struct LoginView: View {
     }
 
     private let onboardingPages: [OnboardingPage] = [
-        OnboardingPage(id: 0, icon: "globe.americas.fill", title: "旅の記録を、地球に刻もう", desc: "3D地球儀であなたの旅行ルートを美しく可視化"),
-        OnboardingPage(id: 1, icon: "camera.fill", title: "写真で旅を振り返る", desc: "旅先の写真を日付ごとに記録して旅行ジャーナルに"),
-        OnboardingPage(id: 2, icon: "person.2.fill", title: "仲間と旅行をシェア", desc: "フォロワーと旅行体験を共有しよう"),
+        OnboardingPage(id: 0, icon: "globe.americas.fill", title: String(localized: "旅の記録を、地球に刻もう"), desc: String(localized: "3D地球儀であなたの旅行ルートを美しく可視化")),
+        OnboardingPage(id: 1, icon: "camera.fill", title: String(localized: "写真で旅を振り返る"), desc: String(localized: "旅先の写真を日付ごとに記録して旅行ジャーナルに")),
+        OnboardingPage(id: 2, icon: "person.2.fill", title: String(localized: "仲間と旅行をシェア"), desc: String(localized: "フォロワーと旅行体験を共有しよう")),
     ]
 
     var body: some View {
@@ -244,7 +244,7 @@ private struct EmailAuthView: View {
                         if authViewModel.isLoading {
                             ProgressView().tint(.white)
                         } else {
-                            Text(isSignUp ? "登録" : "ログイン")
+                            Text(isSignUp ? LocalizedStringKey("登録") : LocalizedStringKey("ログイン"))
                                 .font(GAGATheme.headlineFont)
                         }
                     }
@@ -259,7 +259,7 @@ private struct EmailAuthView: View {
                 Spacer()
             }
             .padding(.top, 20)
-            .navigationTitle(isSignUp ? "新規登録" : "ログイン")
+            .navigationTitle(isSignUp ? LocalizedStringKey("新規登録") : LocalizedStringKey("ログイン"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -279,7 +279,7 @@ private struct EmailAuthView: View {
 
         if isSignUp {
             if password != confirmPassword {
-                localError = "パスワードが一致しません"
+                localError = String(localized: "パスワードが一致しません")
                 return
             }
             await authViewModel.signUpWithEmail(

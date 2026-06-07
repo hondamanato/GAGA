@@ -79,7 +79,7 @@ struct CreatePostView: View {
                         .disabled(isPosting)
                 }
                 ToolbarItem(placement: .principal) {
-                    Text(step == 0 ? "写真を選ぶ" : "詳細を入力")
+                    Text(step == 0 ? LocalizedStringKey("写真を選ぶ") : LocalizedStringKey("詳細を入力"))
                         .font(GAGATheme.headlineFont)
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -359,7 +359,7 @@ struct CreatePostView: View {
                 caption: caption.trimmingCharacters(in: .whitespacesAndNewlines),
                 createdAt: photoDate ?? selectedDate
             )
-            showSuccessToast = "投稿しました ✈️"
+            showSuccessToast = String(localized: "投稿しました ✈️")
             try? await Task.sleep(for: .seconds(1))
             dismiss()
         } catch {

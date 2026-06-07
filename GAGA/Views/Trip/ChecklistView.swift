@@ -31,7 +31,7 @@ struct ChecklistView: View {
                     if category == .essentials { } else {
                         let categoryItems = items.filter { $0.category == category && !$0.isRequired }
                         if !categoryItems.isEmpty {
-                            Section(category.rawValue) {
+                            Section(category.localizedName) {
                                 ForEach(categoryItems) { item in
                                     ChecklistRow(item: item) {
                                         toggleItem(item)
@@ -50,7 +50,7 @@ struct ChecklistView: View {
                         Image(systemName: isAIGenerated ? "sparkles" : "list.bullet")
                             .foregroundStyle(isAIGenerated ? .purple : .secondary)
                             .font(.caption)
-                        Text(isAIGenerated ? "AIが行き先に合わせて作成しました" : "基本テンプレートを表示中")
+                        Text(isAIGenerated ? LocalizedStringKey("AIが行き先に合わせて作成しました") : LocalizedStringKey("基本テンプレートを表示中"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

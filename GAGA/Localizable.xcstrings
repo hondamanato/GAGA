@@ -1,0 +1,2045 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "GAGA" : {
+      "shouldTranslate" : false
+    },
+    "@" : {
+      "shouldTranslate" : false
+    },
+    "OK" : {
+      "shouldTranslate" : false
+    },
+    "username" : {
+      "shouldTranslate" : false
+    },
+    "Apple ID" : {
+      "shouldTranslate" : false
+    },
+    "X (Twitter)" : {
+      "shouldTranslate" : false
+    },
+    "Instagram" : {
+      "shouldTranslate" : false
+    },
+    "support@gaga-app.com" : {
+      "shouldTranslate" : false
+    },
+
+    "Globe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Globe" }
+        }
+      }
+    },
+    "Suitcase" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Suitcase" }
+        }
+      }
+    },
+    "Trips" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Trips" }
+        }
+      }
+    },
+
+    "旅の記録を、地球に刻もう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Engrave your travels on the globe" }
+        }
+      }
+    },
+    "3D地球儀であなたの旅行ルートを美しく可視化" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Beautifully visualize your travel routes on a 3D globe" }
+        }
+      }
+    },
+    "写真で旅を振り返る" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Relive your trips through photos" }
+        }
+      }
+    },
+    "旅先の写真を日付ごとに記録して旅行ジャーナルに" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Record travel photos by date in your trip journal" }
+        }
+      }
+    },
+    "仲間と旅行をシェア" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Share trips with friends" }
+        }
+      }
+    },
+    "フォロワーと旅行体験を共有しよう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Share your travel experiences with followers" }
+        }
+      }
+    },
+    "始める" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Get Started" }
+        }
+      }
+    },
+    "メールでサインイン" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sign in with Email" }
+        }
+      }
+    },
+    "サインインに失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sign in failed" }
+        }
+      }
+    },
+    "ログイン" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Login" }
+        }
+      }
+    },
+    "新規登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sign Up" }
+        }
+      }
+    },
+    "登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Register" }
+        }
+      }
+    },
+    "表示名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Display Name" }
+        }
+      }
+    },
+    "メールアドレス" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Email" }
+        }
+      }
+    },
+    "パスワード（6文字以上）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Password (6+ characters)" }
+        }
+      }
+    },
+    "パスワード確認" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Confirm Password" }
+        }
+      }
+    },
+    "パスワードが一致しません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Passwords do not match" }
+        }
+      }
+    },
+    "キャンセル" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Cancel" }
+        }
+      }
+    },
+
+    "プロフィールを設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Set Up Profile" }
+        }
+      }
+    },
+    "あなたの旅行者プロフィールを作りましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Let's create your traveler profile" }
+        }
+      }
+    },
+    "ユーザーネーム" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Username" }
+        }
+      }
+    },
+    "英小文字・数字・アンダースコア、3〜20文字" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Lowercase letters, numbers, underscores, 3-20 characters" }
+        }
+      }
+    },
+    "あなたの名前" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Your name" }
+        }
+      }
+    },
+    "エラー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Error" }
+        }
+      }
+    },
+
+    "タイムライン" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Timeline" }
+        }
+      }
+    },
+    "旅行" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Trips" }
+        }
+      }
+    },
+    "検索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Search" }
+        }
+      }
+    },
+    "プロフィール" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Profile" }
+        }
+      }
+    },
+
+    "国" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Countries" }
+        }
+      }
+    },
+    "フォロワー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Followers" }
+        }
+      }
+    },
+    "フォロー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Following" }
+        }
+      }
+    },
+    "フォロー中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Following" }
+        }
+      }
+    },
+    "フォローする" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Follow" }
+        }
+      }
+    },
+    "フォロワーはいません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No followers" }
+        }
+      }
+    },
+    "フォローしているユーザーはいません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not following anyone" }
+        }
+      }
+    },
+    "フォロワーが増えるとここに表示されます" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Your followers will appear here" }
+        }
+      }
+    },
+    "ユーザーをフォローしてみましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Try following some users" }
+        }
+      }
+    },
+    "読み込みに失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to load" }
+        }
+      }
+    },
+
+    "旅行がまだありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No trips yet" }
+        }
+      }
+    },
+    "旅行タブから作成しましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Create one from the Trips tab" }
+        }
+      }
+    },
+    "右上の + から最初の旅行を作成しましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Create your first trip with the + button" }
+        }
+      }
+    },
+    "最初の旅行を作成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Create your first trip" }
+        }
+      }
+    },
+    "削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Delete" }
+        }
+      }
+    },
+
+    "旅行プランがまだありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No trip plans yet" }
+        }
+      }
+    },
+    "旅行タブから最初のプランを作ってみましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Create your first plan from the Trips tab" }
+        }
+      }
+    },
+
+    "コメント" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Comments" }
+        }
+      }
+    },
+    "閉じる" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Close" }
+        }
+      }
+    },
+    "コメントの取得に失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to load comments" }
+        }
+      }
+    },
+    "まだコメントがありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No comments yet" }
+        }
+      }
+    },
+    "最初のコメントを書いてみましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Be the first to comment" }
+        }
+      }
+    },
+    "コメントを追加..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add a comment..." }
+        }
+      }
+    },
+    "報告する" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Report" }
+        }
+      }
+    },
+    "報告の理由を選択" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Select reason for report" }
+        }
+      }
+    },
+    "スパム" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Spam" }
+        }
+      }
+    },
+    "不適切な内容" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Inappropriate content" }
+        }
+      }
+    },
+    "ハラスメント" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Harassment" }
+        }
+      }
+    },
+    "その他" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Other" }
+        }
+      }
+    },
+    "報告を送信しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Report submitted" }
+        }
+      }
+    },
+    "ご報告ありがとうございます。内容を確認いたします。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thank you for your report. We will review the content." }
+        }
+      }
+    },
+
+    "写真を選ぶ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Choose Photo" }
+        }
+      }
+    },
+    "詳細を入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Enter Details" }
+        }
+      }
+    },
+    "次へ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Next" }
+        }
+      }
+    },
+    "投稿" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Post" }
+        }
+      }
+    },
+    "アップロード中..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Uploading..." }
+        }
+      }
+    },
+    "投稿に失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to post" }
+        }
+      }
+    },
+    "タップして写真を選択" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Tap to select a photo" }
+        }
+      }
+    },
+    "キャプション" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Caption" }
+        }
+      }
+    },
+    "旅の思い出を書きましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Write about your travel memories" }
+        }
+      }
+    },
+    "場所" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Location" }
+        }
+      }
+    },
+    "旅行プラン" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Trip Plan" }
+        }
+      }
+    },
+    "先に旅行プランを作成してください" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Please create a trip plan first" }
+        }
+      }
+    },
+    "日付" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Date" }
+        }
+      }
+    },
+    "写真を変更" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Change Photo" }
+        }
+      }
+    },
+    "投稿しました ✈️" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Posted ✈️" }
+        }
+      }
+    },
+
+    "写真" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Photo" }
+        }
+      }
+    },
+    "キャプションを入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Enter caption" }
+        }
+      }
+    },
+    "投稿を編集" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Edit Post" }
+        }
+      }
+    },
+    "保存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Save" }
+        }
+      }
+    },
+
+    "旅行タイトル" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Trip Title" }
+        }
+      }
+    },
+    "例: パリ一人旅" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "e.g. Solo trip to Paris" }
+        }
+      }
+    },
+    "日程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Dates" }
+        }
+      }
+    },
+    "出発日" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Departure" }
+        }
+      }
+    },
+    "帰国日" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Return" }
+        }
+      }
+    },
+    "未設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not set" }
+        }
+      }
+    },
+    "%lld日間の旅" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "%lld-day trip" }
+        }
+      }
+    },
+    "出発地" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Origin" }
+        }
+      }
+    },
+    "目的地" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Destination" }
+        }
+      }
+    },
+    "目的地を追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add destination" }
+        }
+      }
+    },
+    "他の場所を追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add another place" }
+        }
+      }
+    },
+    "旅行を編集" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Edit Trip" }
+        }
+      }
+    },
+    "旅行を作成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Create Trip" }
+        }
+      }
+    },
+    "更新" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Update" }
+        }
+      }
+    },
+    "作成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Create" }
+        }
+      }
+    },
+    "保存に失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to save" }
+        }
+      }
+    },
+    "サインインが必要です" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sign in required" }
+        }
+      }
+    },
+    "日程を設定してください" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Please set the dates" }
+        }
+      }
+    },
+    "都市名または国名で検索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Search by city or country name" }
+        }
+      }
+    },
+    "場所を選ぶ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Choose Location" }
+        }
+      }
+    },
+
+    "日程を選択" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Select Dates" }
+        }
+      }
+    },
+    "日付をクリア" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Clear dates" }
+        }
+      }
+    },
+    "%lld泊" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "%lld nights" }
+        }
+      }
+    },
+
+    "必須" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Required" }
+        }
+      }
+    },
+    "AIが行き先に合わせて作成しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "AI-generated based on your destination" }
+        }
+      }
+    },
+    "基本テンプレートを表示中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Showing basic template" }
+        }
+      }
+    },
+    "アイテムを追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add Item" }
+        }
+      }
+    },
+    "新しいアイテム" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "New item" }
+        }
+      }
+    },
+    "AIがチェックリストを作成中..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "AI is creating your checklist..." }
+        }
+      }
+    },
+    "行き先の気候・文化を分析しています" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Analyzing climate and culture of your destination" }
+        }
+      }
+    },
+    "持ち物チェックリスト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Packing Checklist" }
+        }
+      }
+    },
+
+    "投稿がまだありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No posts yet" }
+        }
+      }
+    },
+    "%@の投稿はまだありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No posts for %@ yet" }
+        }
+      }
+    },
+
+    "旅行をするとステッカーが貰えます" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Travel to earn stickers" }
+        }
+      }
+    },
+
+    "ユーザー・国名・地名を検索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Search users, countries, places" }
+        }
+      }
+    },
+    "🔥 トレンド" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "🔥 Trending" }
+        }
+      }
+    },
+    "おすすめスポット" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Recommended Spots" }
+        }
+      }
+    },
+    "検索結果なし" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No results" }
+        }
+      }
+    },
+    "「%@」に一致する結果はありません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No results match \"%@\"" }
+        }
+      }
+    },
+    "ユーザー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Users" }
+        }
+      }
+    },
+    "スポット" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Spots" }
+        }
+      }
+    },
+    "%lld件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "%lld posts" }
+        }
+      }
+    },
+    "ビーチ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Beach" }
+        }
+      }
+    },
+    "都市" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "City" }
+        }
+      }
+    },
+    "自然" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Nature" }
+        }
+      }
+    },
+    "グルメ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Gourmet" }
+        }
+      }
+    },
+
+    "ブロック解除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Unblock" }
+        }
+      }
+    },
+    "ブロック" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Block" }
+        }
+      }
+    },
+    "ブロックを解除しますか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Unblock this user?" }
+        }
+      }
+    },
+    "このユーザーをブロックしますか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Block this user?" }
+        }
+      }
+    },
+    "このユーザーのコンテンツが再び表示されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Their content will be visible again." }
+        }
+      }
+    },
+    "このユーザーの投稿が非表示になります。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Their posts will be hidden." }
+        }
+      }
+    },
+
+    "設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Settings" }
+        }
+      }
+    },
+    "アカウント" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Account" }
+        }
+      }
+    },
+    "プロフィール編集" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Edit Profile" }
+        }
+      }
+    },
+    "連携アカウント" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Linked Accounts" }
+        }
+      }
+    },
+    "通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Notifications" }
+        }
+      }
+    },
+    "プッシュ通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Push Notifications" }
+        }
+      }
+    },
+    "メール通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Email Notifications" }
+        }
+      }
+    },
+    "プライバシーとセキュリティ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Privacy & Security" }
+        }
+      }
+    },
+    "プライバシー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Privacy" }
+        }
+      }
+    },
+    "ブロックしたユーザー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Blocked Users" }
+        }
+      }
+    },
+    "位置情報" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Location" }
+        }
+      }
+    },
+    "表示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Display" }
+        }
+      }
+    },
+    "言語" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Language" }
+        }
+      }
+    },
+    "テーマ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Theme" }
+        }
+      }
+    },
+    "単位 (km / mile)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Units (km / mile)" }
+        }
+      }
+    },
+    "データ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Data" }
+        }
+      }
+    },
+    "ストレージ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Storage" }
+        }
+      }
+    },
+    "データをエクスポート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Export Data" }
+        }
+      }
+    },
+    "キャッシュをクリア" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Clear Cache" }
+        }
+      }
+    },
+    "サポート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Support" }
+        }
+      }
+    },
+    "ヘルプ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Help" }
+        }
+      }
+    },
+    "フィードバックを送る" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Send Feedback" }
+        }
+      }
+    },
+    "お問い合わせ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Contact Us" }
+        }
+      }
+    },
+    "このアプリについて" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "About This App" }
+        }
+      }
+    },
+    "利用規約" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Terms of Service" }
+        }
+      }
+    },
+    "プライバシーポリシー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Privacy Policy" }
+        }
+      }
+    },
+    "ライセンス" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Licenses" }
+        }
+      }
+    },
+    "バージョン" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Version" }
+        }
+      }
+    },
+    "サインアウト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Sign Out" }
+        }
+      }
+    },
+    "アカウントを削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Delete Account" }
+        }
+      }
+    },
+
+    "名前を入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Enter name" }
+        }
+      }
+    },
+    "自己紹介" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Bio" }
+        }
+      }
+    },
+    "自己紹介を入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Enter bio" }
+        }
+      }
+    },
+    "保存しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Saved" }
+        }
+      }
+    },
+
+    "認証方法" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Authentication" }
+        }
+      }
+    },
+    "連携済み" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Connected" }
+        }
+      }
+    },
+    "サインインに使用中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Used for sign-in" }
+        }
+      }
+    },
+    "Apple IDでサインインしています。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Signed in with Apple ID." }
+        }
+      }
+    },
+
+    "アクティビティ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Activity" }
+        }
+      }
+    },
+    "いいね" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Likes" }
+        }
+      }
+    },
+    "新しいフォロワー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "New Followers" }
+        }
+      }
+    },
+    "旅行リマインダー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Trip Reminders" }
+        }
+      }
+    },
+    "ニュースレター" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Newsletter" }
+        }
+      }
+    },
+    "アクティビティ通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Activity Notifications" }
+        }
+      }
+    },
+    "メール通知の設定を変更できます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Manage your email notification preferences." }
+        }
+      }
+    },
+
+    "非公開アカウント" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Private Account" }
+        }
+      }
+    },
+    "非公開にすると、承認したユーザーのみが投稿を閲覧できます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "When private, only approved users can see your posts." }
+        }
+      }
+    },
+    "アクティビティステータスを表示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Show Activity Status" }
+        }
+      }
+    },
+    "オンにすると、他のユーザーにオンライン状態が表示されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "When on, other users can see when you're online." }
+        }
+      }
+    },
+
+    "ブロックしたユーザーはいません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No blocked users" }
+        }
+      }
+    },
+    "ブロックしたユーザーはここに表示されます" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Blocked users will appear here" }
+        }
+      }
+    },
+    "解除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Unblock" }
+        }
+      }
+    },
+
+    "位置情報の利用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Location Access" }
+        }
+      }
+    },
+    "使用中のみ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "While Using" }
+        }
+      }
+    },
+    "位置情報は投稿や旅行の記録に使用されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Location is used for posts and trip recording." }
+        }
+      }
+    },
+    "設定アプリで変更" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Change in Settings" }
+        }
+      }
+    },
+    "位置情報の権限はiOSの設定アプリから変更できます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Location permissions can be changed in iOS Settings." }
+        }
+      }
+    },
+
+    "現在の言語" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Current Language" }
+        }
+      }
+    },
+    "日本語" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Japanese" }
+        }
+      }
+    },
+    "言語はiOSの設定アプリから変更できます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Language can be changed in iOS Settings." }
+        }
+      }
+    },
+
+    "システム" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "System" }
+        }
+      }
+    },
+    "ライト" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Light" }
+        }
+      }
+    },
+    "ダーク" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Dark" }
+        }
+      }
+    },
+    "アプリの外観を選択できます。「システム」はデバイスの設定に従います。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Choose the app appearance. \"System\" follows your device settings." }
+        }
+      }
+    },
+
+    "距離の単位" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Distance Unit" }
+        }
+      }
+    },
+    "キロメートル (km)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Kilometers (km)" }
+        }
+      }
+    },
+    "マイル (mile)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Miles (mi)" }
+        }
+      }
+    },
+    "単位" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Units" }
+        }
+      }
+    },
+
+    "計算中..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Calculating..." }
+        }
+      }
+    },
+    "キャッシュ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Cache" }
+        }
+      }
+    },
+    "画像キャッシュ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Image Cache" }
+        }
+      }
+    },
+
+    "データのエクスポート" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Export Data" }
+        }
+      }
+    },
+    "投稿、旅行、プロフィール情報をJSON形式でエクスポートできます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Export your posts, trips, and profile data in JSON format." }
+        }
+      }
+    },
+    "エクスポート中..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Exporting..." }
+        }
+      }
+    },
+    "エクスポートを開始" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Start Export" }
+        }
+      }
+    },
+    "プロフィール、旅行、投稿データがJSON形式で出力されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Profile, trips, and posts will be exported as JSON." }
+        }
+      }
+    },
+
+    "キャッシュサイズ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Cache Size" }
+        }
+      }
+    },
+    "キャッシュをクリアすると、画像の再読み込みが必要になります。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Clearing cache will require re-downloading images." }
+        }
+      }
+    },
+    "クリア" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Clear" }
+        }
+      }
+    },
+    "キャッシュされた画像データをすべて削除します。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "All cached image data will be deleted." }
+        }
+      }
+    },
+
+    "よくある質問" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "FAQ" }
+        }
+      }
+    },
+    "旅行を作成するには？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "How do I create a trip?" }
+        }
+      }
+    },
+    "ホーム画面の「+」ボタンから新しい旅行を作成できます。出発地と目的地を設定し、日程を入力してください。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Tap the \"+\" button on the home screen to create a new trip. Set the origin, destination, and dates." }
+        }
+      }
+    },
+    "投稿を削除するには？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "How do I delete a post?" }
+        }
+      }
+    },
+    "投稿の右上にある「...」メニューから「削除」を選択してください。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Select \"Delete\" from the \"...\" menu at the top right of the post." }
+        }
+      }
+    },
+    "プロフィールを編集するには？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "How do I edit my profile?" }
+        }
+      }
+    },
+    "プロフィール画面の設定アイコンから「プロフィール編集」を選択してください。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Go to the settings icon on your profile and select \"Edit Profile\"." }
+        }
+      }
+    },
+    "地球儀の操作方法は？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "How do I use the globe?" }
+        }
+      }
+    },
+    "ピンチで拡大縮小、ドラッグで回転できます。地名ラベルをタップすると、その場所の投稿一覧が表示されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Pinch to zoom, drag to rotate. Tap a place label to see posts from that location." }
+        }
+      }
+    },
+
+    "フィードバック" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Feedback" }
+        }
+      }
+    },
+    "ご意見・ご要望を入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Enter your feedback" }
+        }
+      }
+    },
+    "送信" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Submit" }
+        }
+      }
+    },
+    "この機能は現在準備中です。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "This feature is currently under development." }
+        }
+      }
+    },
+    "ありがとうございます" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Thank You" }
+        }
+      }
+    },
+    "フィードバックを受け付けました。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Your feedback has been received." }
+        }
+      }
+    },
+
+    "お問い合わせ先" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Contact" }
+        }
+      }
+    },
+    "SNSからもお問い合わせいただけます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "You can also reach us through social media." }
+        }
+      }
+    },
+
+    "最終更新日: 2024年1月1日" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Last updated: January 1, 2024" }
+        }
+      }
+    },
+    "第1条（適用）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Article 1 (Application)" }
+        }
+      }
+    },
+    "本規約は、本アプリケーション（以下「本アプリ」）の利用に関する条件を定めるものです。ユーザーは本規約に同意の上、本アプリを利用するものとします。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "These terms set forth the conditions for using this application. Users shall use this app upon agreeing to these terms." }
+        }
+      }
+    },
+    "第2条（利用登録）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Article 2 (Registration)" }
+        }
+      }
+    },
+    "登録希望者が本規約に同意の上、所定の方法により利用登録を申請し、当社がこれを承認することによって、利用登録が完了するものとします。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Registration is completed when the applicant agrees to these terms, applies through the prescribed method, and we approve the application." }
+        }
+      }
+    },
+    "第3条（禁止事項）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Article 3 (Prohibited Actions)" }
+        }
+      }
+    },
+    "ユーザーは以下の行為をしてはなりません。法令または公序良俗に違反する行為、犯罪行為に関連する行為、サーバーまたはネットワークの機能を破壊する行為、当社のサービスの運営を妨害する行為。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Users must not: violate laws or public order, engage in criminal activity, disrupt servers or networks, or interfere with our service operations." }
+        }
+      }
+    },
+    "第4条（免責事項）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Article 4 (Disclaimer)" }
+        }
+      }
+    },
+    "当社は、本サービスに起因してユーザーに生じたあらゆる損害について一切の責任を負いません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "We shall not be liable for any damages arising from the use of this service." }
+        }
+      }
+    },
+
+    "1. 収集する情報" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "1. Information We Collect" }
+        }
+      }
+    },
+    "本アプリでは、アカウント情報（表示名、プロフィール写真）、位置情報（投稿時の位置データ）、利用状況データを収集します。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "This app collects account information (display name, profile photo), location data (from posts), and usage data." }
+        }
+      }
+    },
+    "2. 情報の利用目的" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "2. Purpose of Use" }
+        }
+      }
+    },
+    "収集した情報は、サービスの提供・改善、ユーザーサポート、安全性の確保のために利用します。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Collected information is used for providing and improving the service, user support, and ensuring safety." }
+        }
+      }
+    },
+    "3. 情報の第三者提供" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "3. Third-Party Disclosure" }
+        }
+      }
+    },
+    "法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に提供することはありません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "We will not provide personal information to third parties without user consent, except as required by law." }
+        }
+      }
+    },
+    "4. データの保護" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "4. Data Protection" }
+        }
+      }
+    },
+    "適切な技術的・組織的措置を講じ、個人情報の安全管理に努めます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "We take appropriate technical and organizational measures to ensure the security of personal information." }
+        }
+      }
+    },
+
+    "アカウントを削除すると、すべてのデータが完全に削除され、復元できません。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Deleting your account will permanently remove all data and cannot be undone." }
+        }
+      }
+    },
+    "確認のため「%@」と入力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Type \"%@\" to confirm" }
+        }
+      }
+    },
+    "アカウントを削除中..." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Deleting account..." }
+        }
+      }
+    },
+    "アカウント削除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Delete Account" }
+        }
+      }
+    },
+    "本当に削除しますか？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Are you sure?" }
+        }
+      }
+    },
+    "削除する" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Delete" }
+        }
+      }
+    },
+    "この操作は取り消せません。すべてのデータが削除されます。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "This action cannot be undone. All data will be deleted." }
+        }
+      }
+    },
+    "削除に失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to delete" }
+        }
+      }
+    },
+
+    "基本情報" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Basic Info" }
+        }
+      }
+    },
+    "行き先" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Destination" }
+        }
+      }
+    },
+    "ステータス" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Status" }
+        }
+      }
+    },
+    "スケジュール" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Schedule" }
+        }
+      }
+    },
+    "スケジュール未登録" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "No schedule" }
+        }
+      }
+    },
+    "日程ごとの予定を追加しましょう" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add plans for each day" }
+        }
+      }
+    },
+
+    "Apple認証情報を取得できませんでした" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Could not retrieve Apple credentials" }
+        }
+      }
+    },
+    "ログイン状態が不正です。もう一度お試しください" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Invalid login state. Please try again" }
+        }
+      }
+    },
+    "Apple IDトークンの取得に失敗しました" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to retrieve Apple ID token" }
+        }
+      }
+    },
+    "このユーザーネームは既に使われています" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "This username is already taken" }
+        }
+      }
+    },
+    "ログインしていません" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Not signed in" }
+        }
+      }
+    },
+    "アカウント削除に失敗しました: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Failed to delete account: %@" }
+        }
+      }
+    },
+
+    "計画中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Planning" }
+        }
+      }
+    },
+    "旅行中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Traveling" }
+        }
+      }
+    },
+    "完了" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Completed" }
+        }
+      }
+    },
+
+    "衣類" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Clothing" }
+        }
+      }
+    },
+    "電子機器" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Electronics" }
+        }
+      }
+    },
+    "洗面用具" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Toiletries" }
+        }
+      }
+    },
+    "薬・衛生用品" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Medicine & Hygiene" }
+        }
+      }
+    },
+    "書類" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Documents" }
+        }
+      }
+    },
+    "おすすめ" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Recommended" }
+        }
+      }
+    },
+    "文化・マナー" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Culture & Etiquette" }
+        }
+      }
+    },
+    "カスタム" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Custom" }
+        }
+      }
+    },
+
+    "都市名や場所で検索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Search by city or place" }
+        }
+      }
+    },
+    "追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add" }
+        }
+      }
+    },
+    "訪問地を追加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Add Visit" }
+        }
+      }
+    },
+    "移動手段" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Transport" }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -40,7 +40,7 @@ struct GAGAAvatar: View {
 // MARK: - GAGAButton
 
 struct GAGAButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let action: () -> Void
 
     var body: some View {
@@ -254,9 +254,9 @@ struct HeartBounceView: View {
 
 struct GAGAEmptyState: View {
     let icon: String
-    let title: String
-    let description: String
-    var ctaTitle: String? = nil
+    let title: LocalizedStringKey
+    let description: LocalizedStringKey
+    var ctaTitle: LocalizedStringKey? = nil
     var ctaAction: (() -> Void)? = nil
 
     @State private var floating = false

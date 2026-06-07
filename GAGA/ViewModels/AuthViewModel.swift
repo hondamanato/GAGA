@@ -53,16 +53,16 @@ final class AuthViewModel {
 
     func signInWithApple(authorization: ASAuthorization) async {
         guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            errorMessage = "Apple認証情報を取得できませんでした"
+            errorMessage = String(localized: "Apple認証情報を取得できませんでした")
             return
         }
         guard let nonce = currentNonce else {
-            errorMessage = "ログイン状態が不正です。もう一度お試しください"
+            errorMessage = String(localized: "ログイン状態が不正です。もう一度お試しください")
             return
         }
         guard let identityTokenData = credential.identityToken,
               let idTokenString = String(data: identityTokenData, encoding: .utf8) else {
-            errorMessage = "Apple IDトークンの取得に失敗しました"
+            errorMessage = String(localized: "Apple IDトークンの取得に失敗しました")
             return
         }
 
@@ -140,7 +140,7 @@ final class AuthViewModel {
                 let service = UserService()
                 let available = try await service.isUsernameAvailable(username)
                 guard available else {
-                    errorMessage = "このユーザーネームは既に使われています"
+                    errorMessage = String(localized: "このユーザーネームは既に使われています")
                     return
                 }
                 try await service.setUsername(username, userId: uid, oldUsername: currentUser?.username)
@@ -181,7 +181,7 @@ final class AuthViewModel {
     func deleteAccount() async {
         guard let user = Auth.auth().currentUser,
               let uid = firebaseUID else {
-            errorMessage = "ログインしていません"
+            errorMessage = String(localized: "ログインしていません")
             return
         }
 
@@ -251,7 +251,7 @@ final class AuthViewModel {
             try await user.delete()
 
         } catch {
-            errorMessage = "アカウント削除に失敗しました: \(error.localizedDescription)"
+            errorMessage = String(localized: "アカウント削除に失敗しました: \(error.localizedDescription)")
         }
     }
 

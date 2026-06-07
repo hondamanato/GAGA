@@ -38,7 +38,7 @@ struct PostService {
         do {
             try await ref.delete()
         } catch {
-            print("[PostService] Failed to delete image for post \(post.id): \(error.localizedDescription)")
+            // silently ignore deletion failure
         }
     }
 

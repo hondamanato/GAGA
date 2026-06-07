@@ -20,7 +20,7 @@ enum ChecklistTemplateService {
             )
             return (items, true)
         } catch {
-            print("[ChecklistAI] Gemini error, using fallback: \(error.localizedDescription)")
+            // Gemini error — use fallback checklist
             return (fallbackChecklist(for: destinations), false)
         }
     }

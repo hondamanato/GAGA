@@ -18,16 +18,23 @@ struct FollowListView: View {
         _selectedTab = State(initialValue: initialTab)
     }
 
-    enum FollowTab: String, CaseIterable {
-        case followers = "フォロワー"
-        case following = "フォロー中"
+    enum FollowTab: CaseIterable {
+        case followers
+        case following
+
+        var label: String {
+            switch self {
+            case .followers: String(localized: "フォロワー")
+            case .following: String(localized: "フォロー中")
+            }
+        }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: $selectedTab) {
                 ForEach(FollowTab.allCases, id: \.self) { tab in
-                    Text(tab.rawValue).tag(tab)
+                    Text(tab.label).tag(tab)
                 }
             }
             .pickerStyle(.segmented)
@@ -42,8 +49,8 @@ struct FollowListView: View {
                 if users.isEmpty {
                     GAGAEmptyState(
                         icon: "person.2",
-                        title: selectedTab == .followers ? "フォロワーはいません" : "フォローしているユーザーはいません",
-                        description: selectedTab == .followers ? "フォロワーが増えるとここに表示されます" : "ユーザーをフォローしてみましょう"
+                        title: selectedTab == .followers ? LocalizedStringKey("フォロワーはいません") : LocalizedStringKey("フォローしているユーザーはいません"),
+                        description: selectedTab == .followers ? LocalizedStringKey("フォロワーが増えるとここに表示されます") : LocalizedStringKey("ユーザーをフォローしてみましょう")
                     )
                 } else {
                     List(users) { user in
@@ -68,7 +75,7 @@ struct FollowListView: View {
                 }
             }
         }
-        .navigationTitle(selectedTab.rawValue)
+        .navigationTitle(selectedTab.label)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadAll()

@@ -43,6 +43,14 @@ enum TripStatus: String, Codable, CaseIterable {
     case planning = "計画中"
     case traveling = "旅行中"
     case completed = "完了"
+
+    var localizedName: String {
+        switch self {
+        case .planning: String(localized: "計画中")
+        case .traveling: String(localized: "旅行中")
+        case .completed: String(localized: "完了")
+        }
+    }
 }
 
 struct Location: Identifiable, Codable, Equatable, Hashable {

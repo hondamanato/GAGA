@@ -514,9 +514,12 @@ struct TripJournalView: View {
 
     private func locationCard(location: Location) -> some View {
         return ZStack(alignment: .topLeading) {
-            locationHeroImage(for: location)
-                .frame(width: 220, height: 290)
-                .clipped()
+            GeometryReader { _ in
+                locationHeroImage(for: location)
+            }
+            .frame(minWidth: 180, idealWidth: 220, maxWidth: 260)
+            .frame(height: 290)
+            .clipped()
 
             let flag = flagEmoji(for: location.country)
             if !flag.isEmpty {
@@ -694,8 +697,8 @@ private struct AddStepSheet: View {
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ja_JP")
-        f.dateFormat = "M月d日 (E)"
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate("MMMdE")
         return f
     }()
 

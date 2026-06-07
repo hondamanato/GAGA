@@ -178,7 +178,7 @@ struct AccountSettingsView: View {
             }
             Section("メールアドレス") {
                 HStack {
-                    Text(Auth.auth().currentUser?.email ?? "未設定")
+                    Text(Auth.auth().currentUser?.email ?? String(localized: "未設定"))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -386,32 +386,6 @@ struct LocationSettingsView: View {
 
 // MARK: - 表示
 
-struct LanguageSettingsView: View {
-    var body: some View {
-        Form {
-            Section {
-                HStack {
-                    Text("現在の言語")
-                    Spacer()
-                    Text(Locale.current.localizedString(forLanguageCode: Locale.current.language.languageCode?.identifier ?? "ja") ?? "日本語")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Section {
-                Button("設定アプリで変更") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-            } footer: {
-                Text("言語はiOSの設定アプリから変更できます。")
-            }
-        }
-        .navigationTitle("言語")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 struct ThemeSettingsView: View {
     @AppStorage("app_theme") private var theme = 0 // 0=system, 1=light, 2=dark
 
@@ -456,7 +430,7 @@ struct UnitSettingsView: View {
 // MARK: - データ
 
 struct StorageSettingsView: View {
-    @State private var cacheSize: String = "計算中..."
+    @State private var cacheSize: String = String(localized: "計算中...")
 
     var body: some View {
         Form {
@@ -607,7 +581,7 @@ private struct ShareSheet: UIViewControllerRepresentable {
 }
 
 struct CacheClearView: View {
-    @State private var cacheSize: String = "計算中..."
+    @State private var cacheSize: String = String(localized: "計算中...")
     @State private var showConfirm = false
     @State private var cleared = false
 
@@ -859,12 +833,13 @@ struct DeleteAccountView: View {
             }
 
             Section {
-                TextField("確認のため「削除」と入力", text: $confirmText)
+                let deleteWord = String(localized: "削除")
+                TextField(String(localized: "確認のため「\(deleteWord)」と入力"), text: $confirmText)
                     .disabled(isDeleting)
                 Button("アカウントを削除", role: .destructive) {
                     showConfirm = true
                 }
-                .disabled(confirmText != "削除" || isDeleting)
+                .disabled(confirmText != deleteWord || isDeleting)
             }
 
             if isDeleting {

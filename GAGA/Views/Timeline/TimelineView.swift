@@ -177,7 +177,7 @@ private struct TimelineTripCard: View {
                                 .foregroundStyle(.white.opacity(0.7))
                         }
                         Spacer()
-                        Text(trip.status.rawValue)
+                        Text(trip.status.localizedName)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 8)

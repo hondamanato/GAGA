@@ -10,6 +10,20 @@ enum ChecklistCategory: String, Codable, CaseIterable {
     case recommended = "おすすめ"
     case culture = "文化・マナー"
     case custom = "カスタム"
+
+    var localizedName: String {
+        switch self {
+        case .essentials: String(localized: "必須")
+        case .clothing: String(localized: "衣類")
+        case .electronics: String(localized: "電子機器")
+        case .toiletries: String(localized: "洗面用具")
+        case .medicine: String(localized: "薬・衛生用品")
+        case .documents: String(localized: "書類")
+        case .recommended: String(localized: "おすすめ")
+        case .culture: String(localized: "文化・マナー")
+        case .custom: String(localized: "カスタム")
+        }
+    }
 }
 
 struct ChecklistItem: Identifiable, Codable {

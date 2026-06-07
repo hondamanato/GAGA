@@ -19,6 +19,14 @@ struct SearchView: View {
         case food = "グルメ"
 
         var id: String { rawValue }
+        var localizedName: String {
+            switch self {
+            case .beach: String(localized: "ビーチ")
+            case .city: String(localized: "都市")
+            case .nature: String(localized: "自然")
+            case .food: String(localized: "グルメ")
+            }
+        }
         var icon: String {
             switch self {
             case .beach: "sun.max.fill"
@@ -100,7 +108,7 @@ struct SearchView: View {
                                 selectedCategory = selectedCategory == cat ? nil : cat
                             }
                         } label: {
-                            Label(cat.rawValue, systemImage: cat.icon)
+                            Label(cat.localizedName, systemImage: cat.icon)
                                 .font(GAGATheme.captionFont)
                                 .fontWeight(.semibold)
                                 .padding(.horizontal, 14)
@@ -197,7 +205,8 @@ struct SearchView: View {
             }
             .padding(12)
         }
-        .frame(width: 200, height: 140)
+        .frame(minWidth: 160, maxWidth: 200)
+        .frame(height: 140)
         .clipShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
     }
 
@@ -273,6 +282,7 @@ struct SearchView: View {
                     title: "検索結果なし",
                     description: "「\(store.query)」に一致する結果はありません"
                 )
+
             }
         }
         .padding(.top, 8)

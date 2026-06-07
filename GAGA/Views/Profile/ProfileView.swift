@@ -204,7 +204,7 @@ struct ProfileView: View {
                 title: "旅行がまだありません",
                 description: "旅行タブから作成しましょう"
             )
-            .frame(height: 400)
+            .frame(minHeight: 200, maxHeight: 400)
         } else {
             LazyVStack(spacing: 16) {
                 ForEach(tripStore.trips) { trip in
@@ -234,9 +234,9 @@ enum ProfileTab: CaseIterable {
 
     var label: String {
         switch self {
-        case .globe: "Globe"
-        case .suitcase: "Suitcase"
-        case .list: "Trips"
+        case .globe: String(localized: "Globe")
+        case .suitcase: String(localized: "Suitcase")
+        case .list: String(localized: "Trips")
         }
     }
 }
@@ -283,7 +283,7 @@ struct ProfileTripCard: View {
                 .foregroundStyle(.white.opacity(0.85))
 
                 HStack(spacing: 8) {
-                    Text(trip.status.rawValue)
+                    Text(trip.status.localizedName)
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .padding(.horizontal, 8)
@@ -341,7 +341,7 @@ struct ProfileTripCard: View {
 
 struct StatItem: View {
     let value: String
-    let label: String
+    let label: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 2) {

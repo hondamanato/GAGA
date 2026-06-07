@@ -14,7 +14,7 @@ struct CalendarRangePickerView: View {
     private let today = Calendar.current.startOfDay(for: .now)
     private let pastMonthCount = 6
     private let futureMonthCount = 12
-    private let weekdays = ["日", "月", "火", "水", "木", "金", "土"]
+    private let weekdays = Calendar.current.veryShortWeekdaySymbols
 
     init(startDate: Date?, endDate: Date?, onSave: @escaping (Date?, Date?) -> Void) {
         self.initialStart = startDate
@@ -32,14 +32,14 @@ struct CalendarRangePickerView: View {
 
     private var firstOfCurrentMonth: Date {
         let comps = calendar.dateComponents([.year, .month], from: today)
-        return calendar.date(from: comps)!
+        return calendar.date(from: comps) ?? today
     }
 
     /// スクロール先の月ID
     private var scrollTargetId: Date {
         if let s = tempStart {
             let comps = calendar.dateComponents([.year, .month], from: s)
-            return calendar.date(from: comps)!
+            return calendar.date(from: comps) ?? firstOfCurrentMonth
         }
         return firstOfCurrentMonth
     }
@@ -151,9 +151,9 @@ struct CalendarRangePickerView: View {
 
     private func monthView(for month: Date) -> some View {
         let comps = calendar.dateComponents([.year, .month], from: month)
-        let year = comps.year!
-        let monthNum = comps.month!
-        let daysInMonth = calendar.range(of: .day, in: .month, for: month)!.count
+        let year = comps.year ?? calendar.component(.year, from: month)
+        let monthNum = comps.month ?? calendar.component(.month, from: month)
+        let daysInMonth = calendar.range(of: .day, in: .month, for: month)?.count ?? 30
         let firstWeekday = calendar.component(.weekday, from: month)
 
         return VStack(alignment: .leading, spacing: 8) {
@@ -167,8 +167,9 @@ struct CalendarRangePickerView: View {
                     Color.clear.frame(height: 44)
                 }
                 ForEach(1...daysInMonth, id: \.self) { day in
-                    let date = calendar.date(from: DateComponents(year: year, month: monthNum, day: day))!
-                    dayCellView(date: date, day: day)
+                    if let date = calendar.date(from: DateComponents(year: year, month: monthNum, day: day)) {
+                        dayCellView(date: date, day: day)
+                    }
                 }
             }
         }
@@ -296,12 +297,17 @@ struct CalendarRangePickerView: View {
 
     private func formatDate(_ date: Date) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "ja_JP")
-        f.dateFormat = "M月d日"
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate("MMMd")
         return f.string(from: date)
     }
 
     private func monthLabel(year: Int, month: Int) -> String {
-        "\(year)年\(month)月"
+        let components = DateComponents(year: year, month: month)
+        guard let date = Calendar.current.date(from: components) else { return "" }
+        let f = DateFormatter()
+        f.locale = Locale.current
+        f.setLocalizedDateFormatFromTemplate("yyyyMMMM")
+        return f.string(from: date)
     }
 }

@@ -649,16 +649,13 @@ struct SuitcaseView: View {
     }
 
     private func rebuildDecalNodes() {
-        print("🔄 [SuitcaseView] rebuildDecalNodes called, stickers: \(placedStickers.count), shellGeometry: \(shellGeometry != nil ? "✅" : "nil")")
         // shellGeometry may be nil if @State wasn't committed yet (e.g. during .onAppear).
         // Fall back to recomputing from the scene graph.
         if shellGeometry == nil,
            let container = scene.rootNode.childNode(withName: "usdzContainer", recursively: false) {
             shellGeometry = container.flattenedClone().geometry
-            print("🔄 [SuitcaseView] Recomputed shellGeometry from scene: \(shellGeometry != nil ? "✅" : "❌ still nil")")
         }
         guard let baseGeometry = shellGeometry else {
-            print("❌ [SuitcaseView] shellGeometry is nil, skipping decal rendering")
             return
         }
 
@@ -744,7 +741,7 @@ struct SuitcaseView: View {
                 placedStickers = stickers
                 rebuildDecalNodes()
             } catch {
-                print("[SuitcaseView] Failed to load stickers: \(error)")
+                // ignore sticker load failure
             }
         }
     }

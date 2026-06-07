@@ -35,3 +35,6 @@ Pods/
 
 # Claude / editor scratch
 tasks/
+
+# Lazyweb
+.lazyweb/

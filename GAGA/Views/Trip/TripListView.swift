@@ -132,7 +132,7 @@ private struct TripCard: View {
 
                 HStack(spacing: 8) {
                     // Status badge
-                    Text(trip.status.rawValue)
+                    Text(trip.status.localizedName)
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .padding(.horizontal, 8)

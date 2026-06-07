@@ -61,8 +61,10 @@ struct SettingsView: View {
             }
 
             Section("表示") {
-                NavigationLink {
-                    LanguageSettingsView()
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
                 } label: {
                     Label("言語", systemImage: "globe")
                 }

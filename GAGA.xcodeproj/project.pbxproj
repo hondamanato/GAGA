@@ -112,9 +112,10 @@
 				};
 			};
 			buildConfigurationList = 59C0B2D92F87CBCD00DE2D38 /* Build configuration list for PBXProject "GAGA" */;
-			developmentRegion = en;
+			developmentRegion = ja;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				ja,
 				en,
 				Base,
 			);

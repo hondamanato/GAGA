@@ -446,7 +446,7 @@ private struct GlobeTripCard: View {
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    Text(trip.status.rawValue)
+                    Text(trip.status.localizedName)
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .padding(.horizontal, 7)

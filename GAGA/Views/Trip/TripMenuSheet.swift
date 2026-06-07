@@ -12,7 +12,7 @@ struct TripMenuSheet: View {
                     LabeledContent("行き先", value: trip.destinations.map(\.name).joined(separator: ", "))
                     LabeledContent("出発日", value: trip.departureDate.formatted(date: .abbreviated, time: .omitted))
                     LabeledContent("帰国日", value: trip.returnDate.formatted(date: .abbreviated, time: .omitted))
-                    LabeledContent("ステータス", value: trip.status.rawValue)
+                    LabeledContent("ステータス", value: trip.status.localizedName)
 
                     Button {
                         showEditTrip = true

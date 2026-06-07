@@ -79,7 +79,11 @@ struct UserProfileView: View {
                         Button(role: .destructive) {
                             showBlockConfirm = true
                         } label: {
-                            Label(isBlocked ? "ブロック解除" : "ブロック", systemImage: isBlocked ? "person.badge.plus" : "person.fill.xmark")
+                            Label {
+                                Text(isBlocked ? LocalizedStringKey("ブロック解除") : LocalizedStringKey("ブロック"))
+                            } icon: {
+                                Image(systemName: isBlocked ? "person.badge.plus" : "person.fill.xmark")
+                            }
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -88,15 +92,17 @@ struct UserProfileView: View {
             }
         }
         .confirmationDialog(
-            isBlocked ? "ブロックを解除しますか？" : "このユーザーをブロックしますか？",
+            isBlocked ? LocalizedStringKey("ブロックを解除しますか？") : LocalizedStringKey("このユーザーをブロックしますか？"),
             isPresented: $showBlockConfirm,
             titleVisibility: .visible
         ) {
-            Button(isBlocked ? "ブロック解除" : "ブロック", role: isBlocked ? nil : .destructive) {
+            Button(role: isBlocked ? nil : .destructive) {
                 Task { await toggleBlock() }
+            } label: {
+                Text(isBlocked ? LocalizedStringKey("ブロック解除") : LocalizedStringKey("ブロック"))
             }
         } message: {
-            Text(isBlocked ? "このユーザーのコンテンツが再び表示されます。" : "このユーザーの投稿が非表示になります。")
+            Text(isBlocked ? LocalizedStringKey("このユーザーのコンテンツが再び表示されます。") : LocalizedStringKey("このユーザーの投稿が非表示になります。"))
         }
         .navigationDestination(for: Trip.self) { trip in
             TripDetailView(trip: trip)
@@ -166,7 +172,7 @@ struct UserProfileView: View {
                 }
             }
         } label: {
-            Text(store.isFollowing ? "フォロー中" : "フォローする")
+            Text(store.isFollowing ? LocalizedStringKey("フォロー中") : LocalizedStringKey("フォローする"))
                 .font(GAGATheme.headlineFont)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
@@ -275,7 +281,7 @@ struct UserProfileView: View {
                 title: "旅行がまだありません",
                 description: ""
             )
-            .frame(height: 400)
+            .frame(minHeight: 200, maxHeight: 400)
         } else {
             LazyVStack(spacing: 16) {
                 ForEach(store.trips) { trip in
