@@ -696,17 +696,14 @@ struct ContactView: View {
     var body: some View {
         Form {
             Section("お問い合わせ先") {
-                Label("support@gaga-app.com", systemImage: "envelope.fill")
+                Link(destination: URL(string: "mailto:31foresight@gmail.com")!) {
+                    Label("31foresight@gmail.com", systemImage: "envelope.fill")
+                }
             }
-            Section {
-                Link(destination: URL(string: "https://twitter.com")!) {
-                    Label("X (Twitter)", systemImage: "bubble.left.fill")
+            Section("サポートページ") {
+                Link(destination: URL(string: "https://hondamanato.github.io/GAGA/")!) {
+                    Label("サポートページを開く", systemImage: "safari.fill")
                 }
-                Link(destination: URL(string: "https://instagram.com")!) {
-                    Label("Instagram", systemImage: "camera.fill")
-                }
-            } footer: {
-                Text("SNSからもお問い合わせいただけます。")
             }
         }
         .navigationTitle("お問い合わせ")
@@ -752,35 +749,17 @@ struct TermsOfServiceView: View {
 
 struct PrivacyPolicyView: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("プライバシーポリシー")
-                    .font(GAGATheme.titleFont)
-                Text("最終更新日: 2024年1月1日")
-                    .font(GAGATheme.captionFont)
-                    .foregroundStyle(.secondary)
-
-                Group {
-                    sectionText("1. 収集する情報", "本アプリでは、アカウント情報（表示名、プロフィール写真）、位置情報（投稿時の位置データ）、利用状況データを収集します。")
-                    sectionText("2. 情報の利用目的", "収集した情報は、サービスの提供・改善、ユーザーサポート、安全性の確保のために利用します。")
-                    sectionText("3. 情報の第三者提供", "法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に提供することはありません。")
-                    sectionText("4. データの保護", "適切な技術的・組織的措置を講じ、個人情報の安全管理に努めます。")
+        Form {
+            Section {
+                Link(destination: URL(string: "https://hondamanato.github.io/GAGA/privacy.html")!) {
+                    Label("プライバシーポリシーを開く", systemImage: "safari.fill")
                 }
+            } footer: {
+                Text("ブラウザでプライバシーポリシーの全文を表示します。")
             }
-            .padding()
         }
         .navigationTitle("プライバシーポリシー")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func sectionText(_ title: String, _ body: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(GAGATheme.headlineFont)
-            Text(body)
-                .font(GAGATheme.bodyFont)
-                .foregroundStyle(.secondary)
-        }
     }
 }
 
