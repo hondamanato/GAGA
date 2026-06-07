@@ -11,9 +11,11 @@ import MapboxMaps
 
 @main
 struct GAGAApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @State private var authViewModel: AuthViewModel
     @State private var tripStore: TripStore
     @State private var postStore: PostStore
+    @State private var notificationStore: NotificationStore
 
     init() {
         FirebaseApp.configure()
@@ -25,6 +27,7 @@ struct GAGAApp: App {
         _authViewModel = State(wrappedValue: AuthViewModel())
         _tripStore = State(wrappedValue: TripStore())
         _postStore = State(wrappedValue: PostStore())
+        _notificationStore = State(wrappedValue: NotificationStore())
     }
 
     var body: some Scene {
@@ -43,6 +46,7 @@ struct GAGAApp: App {
             .environment(authViewModel)
             .environment(tripStore)
             .environment(postStore)
+            .environment(notificationStore)
             .task {
                 authViewModel.start()
             }

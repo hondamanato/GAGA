@@ -148,6 +148,11 @@ final class TripStore {
                 try await service.unlikeTrip(tripId: tripId, userId: userId)
             } else {
                 try await service.likeTrip(tripId: tripId, userId: userId)
+                if UserDefaults.standard.bool(forKey: "notif_likes") != false {
+                    await NotificationService().send(
+                        AppNotification(recipientId: trip.userId, actorId: userId, type: .like, tripId: tripId, tripTitle: trip.title)
+                    )
+                }
             }
         } catch {
             applyLikeLocally(tripId: tripId, liked: wasLiked)
@@ -176,6 +181,11 @@ final class TripStore {
         try await service.addComment(tripId: trip.id, comment: comment)
         if let idx = timeline.firstIndex(where: { $0.id == trip.id }) {
             timeline[idx].commentsCount += 1
+        }
+        if UserDefaults.standard.bool(forKey: "notif_comments") != false {
+            await NotificationService().send(
+                AppNotification(recipientId: trip.userId, actorId: userId, type: .comment, tripId: trip.id, tripTitle: trip.title)
+            )
         }
     }
 

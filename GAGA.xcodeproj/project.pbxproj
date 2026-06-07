@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		593C98012F8BC18500AB4192 /* FirebaseAI in Frameworks */ = {isa = PBXBuildFile; productRef = 593C98002F8BC18500AB4192 /* FirebaseAI */; };
+		593C98032F8BC18500AB4192 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 593C98022F8BC18500AB4192 /* FirebaseMessaging */; };
 		599A6CE22F891188006B670B /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 599A6CE12F891188006B670B /* FirebaseAuth */; };
 		599A6CE42F891188006B670B /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 599A6CE32F891188006B670B /* FirebaseFirestore */; };
 		599A6CF62F892BA6006B670B /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 599A6CF52F892BA6006B670B /* FirebaseStorage */; };
@@ -33,6 +34,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				593C98012F8BC18500AB4192 /* FirebaseAI in Frameworks */,
+				593C98032F8BC18500AB4192 /* FirebaseMessaging in Frameworks */,
 				59C0B36D2F87D36800DE2D38 /* MapboxMaps in Frameworks */,
 				599A6CF62F892BA6006B670B /* FirebaseStorage in Frameworks */,
 				599A6CE22F891188006B670B /* FirebaseAuth in Frameworks */,
@@ -93,6 +95,7 @@
 				599A6CE32F891188006B670B /* FirebaseFirestore */,
 				599A6CF52F892BA6006B670B /* FirebaseStorage */,
 				593C98002F8BC18500AB4192 /* FirebaseAI */,
+				593C98022F8BC18500AB4192 /* FirebaseMessaging */,
 			);
 			productName = GAGA;
 			productReference = 59C0B2DE2F87CBCD00DE2D38 /* GAGA.app */;
@@ -402,6 +405,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 599A6CE02F891188006B670B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAI;
+		};
+		593C98022F8BC18500AB4192 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 599A6CE02F891188006B670B /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 		599A6CE12F891188006B670B /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;

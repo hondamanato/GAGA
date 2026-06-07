@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @Environment(TripStore.self) private var tripStore
     @Environment(PostStore.self) private var postStore
+    @Environment(NotificationStore.self) private var notificationStore
     @State private var selectedTab = 0
     @AppStorage("app_theme") private var appTheme = 0
 
@@ -36,11 +37,18 @@ struct ContentView: View {
                 TripListView()
             }
 
-            Tab("検索", systemImage: "magnifyingglass", value: 3) {
+            Tab(value: 3) {
+                NotificationListView()
+            } label: {
+                Label("通知", systemImage: "bell.fill")
+                    .badge(notificationStore.unreadCount)
+            }
+
+            Tab("検索", systemImage: "magnifyingglass", value: 4) {
                 SearchView()
             }
 
-            Tab("プロフィール", systemImage: "person.fill", value: 4) {
+            Tab("プロフィール", systemImage: "person.fill", value: 5) {
                 ProfileView()
             }
         }
@@ -48,6 +56,7 @@ struct ContentView: View {
         .tint(GAGATheme.coral)
         .task(id: authViewModel.firebaseUID) {
             tripStore.startListening(userId: authViewModel.firebaseUID)
+            notificationStore.startListening(userId: authViewModel.firebaseUID)
         }
     }
 }
@@ -57,4 +66,5 @@ struct ContentView: View {
         .environment(AuthViewModel())
         .environment(TripStore())
         .environment(PostStore())
+        .environment(NotificationStore())
 }

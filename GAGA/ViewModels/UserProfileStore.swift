@@ -50,6 +50,11 @@ final class UserProfileStore {
                 try await userService.unfollow(currentUserId: currentUserId, targetUserId: targetId)
             } else {
                 try await userService.follow(currentUserId: currentUserId, targetUserId: targetId)
+                if UserDefaults.standard.bool(forKey: "notif_follows") != false {
+                    await NotificationService().send(
+                        AppNotification(recipientId: targetId, actorId: currentUserId, type: .follow)
+                    )
+                }
             }
         } catch {
             isFollowing = wasFollowing
