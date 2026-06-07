@@ -33,6 +33,9 @@ Pods/
 # macOS
 .DS_Store
 
+# Secrets
+Secrets.xcconfig
+
 # Claude / editor scratch
 tasks/
 

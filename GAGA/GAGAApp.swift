@@ -17,7 +17,7 @@ struct GAGAApp: App {
 
     init() {
         FirebaseApp.configure()
-        MapboxOptions.accessToken = "MAPBOX_TOKEN_REMOVED"
+        MapboxOptions.accessToken = Bundle.main.infoDictionary?["MapboxAccessToken"] as? String ?? ""
 
         // Firebase configure 後に Store を生成する必要あり。
         // デフォルト値で @State を初期化すると init() body より先に評価され、

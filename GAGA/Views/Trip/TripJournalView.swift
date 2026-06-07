@@ -243,6 +243,7 @@ struct TripJournalView: View {
         do {
             try await TripService().update(updated)
             tripStore.applyUpdate(updated)
+            await loadRouteSegments()
         } catch {
             // silent fail
         }
