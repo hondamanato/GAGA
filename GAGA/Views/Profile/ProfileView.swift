@@ -15,6 +15,23 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: GAGATheme.spacingSM) {
                     statsRow
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(user?.displayName ?? "Traveler")
+                            .font(GAGATheme.headlineFont)
+                        if let username = user?.username, !username.isEmpty {
+                            Text("@\(username)")
+                                .font(GAGATheme.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let bio = user?.bio, !bio.isEmpty {
+                            Text(bio)
+                                .font(GAGATheme.bodyFont)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, GAGATheme.spacingMD)
                     if visitedCountriesCount > 0 {
                         visitedCountriesChips
                     }
@@ -24,10 +41,6 @@ struct ProfileView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text(user?.displayName ?? "Traveler")
-                        .font(GAGATheme.headlineFont)
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         SettingsView()
@@ -42,37 +55,42 @@ struct ProfileView: View {
             .navigationDestination(for: Trip.self) { trip in
                 TripDetailView(trip: trip)
             }
+            .task {
+                await authViewModel.reloadCurrentUser()
+            }
             .refreshable {
+                await authViewModel.reloadCurrentUser()
                 await tripStore.load(userId: authViewModel.firebaseUID)
             }
         }
     }
 
     private var statsRow: some View {
-        HStack(spacing: 0) {
-            GAGAAvatar(url: user?.avatarURL, size: 48)
-                .padding(.trailing, 8)
-            StatItem(value: "\(tripStore.trips.count)", label: "旅行")
-            StatItem(value: "\(visitedCountriesCount)", label: "国")
-            if let uid = authViewModel.firebaseUID {
-                NavigationLink {
-                    FollowListView(userId: uid, initialTab: .followers)
-                } label: {
+        HStack(spacing: 16) {
+            GAGAAvatar(url: user?.avatarURL, size: 80)
+
+            HStack(spacing: 0) {
+                StatItem(value: "\(visitedCountriesCount)", label: "国")
+                if let uid = authViewModel.firebaseUID {
+                    NavigationLink {
+                        FollowListView(userId: uid, initialTab: .followers)
+                    } label: {
+                        StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
+                    }
+                    .buttonStyle(.plain)
+                } else {
                     StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
                 }
-                .buttonStyle(.plain)
-            } else {
-                StatItem(value: "\(user?.followersCount ?? 0)", label: "フォロワー")
-            }
-            if let uid = authViewModel.firebaseUID {
-                NavigationLink {
-                    FollowListView(userId: uid, initialTab: .following)
-                } label: {
+                if let uid = authViewModel.firebaseUID {
+                    NavigationLink {
+                        FollowListView(userId: uid, initialTab: .following)
+                    } label: {
+                        StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
+                    }
+                    .buttonStyle(.plain)
+                } else {
                     StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
                 }
-                .buttonStyle(.plain)
-            } else {
-                StatItem(value: "\(user?.followingCount ?? 0)", label: "フォロー")
             }
         }
         .padding(.horizontal, GAGATheme.spacingMD)
@@ -131,12 +149,13 @@ struct ProfileView: View {
                         selectedTab = tab
                     }
                 } label: {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         Image(systemName: tab.icon)
                             .font(.title3)
                             .foregroundStyle(selectedTab == tab ? .primary : .secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                        Text(tab.label)
+                            .font(.caption2)
+                            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
                         if selectedTab == tab {
                             Rectangle()
                                 .fill(GAGATheme.accentGradient)
@@ -148,6 +167,8 @@ struct ProfileView: View {
                                 .frame(height: 2)
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                 }
                 .buttonStyle(.plain)
             }
@@ -200,7 +221,7 @@ struct ProfileView: View {
 
 }
 
-private enum ProfileTab: CaseIterable {
+enum ProfileTab: CaseIterable {
     case globe, suitcase, list
 
     var icon: String {
@@ -210,9 +231,17 @@ private enum ProfileTab: CaseIterable {
         case .list: "list.bullet"
         }
     }
+
+    var label: String {
+        switch self {
+        case .globe: "Globe"
+        case .suitcase: "Suitcase"
+        case .list: "Trips"
+        }
+    }
 }
 
-private struct ProfileTripCard: View {
+struct ProfileTripCard: View {
     let trip: Trip
 
     private var routeText: String {
@@ -310,7 +339,7 @@ private struct ProfileTripCard: View {
     }
 }
 
-private struct StatItem: View {
+struct StatItem: View {
     let value: String
     let label: String
 

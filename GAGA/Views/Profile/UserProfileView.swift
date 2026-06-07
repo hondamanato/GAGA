@@ -1,4 +1,5 @@
 import SwiftUI
+import MapboxMaps
 
 struct UserProfileView: View {
     let userId: String
@@ -7,12 +8,11 @@ struct UserProfileView: View {
     @State private var store = UserProfileStore()
     @State private var isBlocked = false
     @State private var showBlockConfirm = false
+    @State private var selectedTab: ProfileTab = .globe
+    @State private var userTripStore = TripStore()
+    @Namespace private var tabAnimation
 
     private let userService = UserService()
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
 
     private var isMe: Bool {
         authViewModel.firebaseUID == userId
@@ -31,29 +31,44 @@ struct UserProfileView: View {
         return countries
     }
 
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "M/d"
-        return f
-    }()
+    private var visitedCountriesCount: Int {
+        Set(allVisitedCountries).count
+    }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                header
+            VStack(spacing: GAGATheme.spacingSM) {
                 statsRow
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(store.user?.displayName ?? "")
+                        .font(GAGATheme.headlineFont)
+                    if let username = store.user?.username, !username.isEmpty {
+                        Text("@\(username)")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let bio = store.user?.bio, !bio.isEmpty {
+                        Text(bio)
+                            .font(GAGATheme.bodyFont)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, GAGATheme.spacingMD)
+
                 if !isMe, authViewModel.firebaseUID != nil {
                     followButton
                 }
-                SuitcaseView(
-                    visitedCountries: allVisitedCountries,
-                    userId: userId,
-                    readOnly: true
-                )
-                Divider()
-                tripsGrid
+
+                if visitedCountriesCount > 0 {
+                    visitedCountriesChips
+                }
+
+                tabBar
+                tabContent
             }
-            .padding(.top, 8)
         }
         .navigationTitle(store.user?.displayName ?? "プロフィール")
         .navigationBarTitleDisplayMode(.inline)
@@ -83,8 +98,12 @@ struct UserProfileView: View {
         } message: {
             Text(isBlocked ? "このユーザーのコンテンツが再び表示されます。" : "このユーザーの投稿が非表示になります。")
         }
+        .navigationDestination(for: Trip.self) { trip in
+            TripDetailView(trip: trip)
+        }
         .task {
             await store.load(userId: userId, currentUserId: authViewModel.firebaseUID)
+            userTripStore.trips = store.trips
             if let uid = authViewModel.firebaseUID, uid != userId {
                 isBlocked = (try? await userService.isBlocked(currentUserId: uid, targetUserId: userId)) ?? false
             }
@@ -107,91 +126,45 @@ struct UserProfileView: View {
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 0) {
-            // Cover photo
-            ZStack {
-                if let urlStr = store.user?.coverPhotoURL, let url = URL(string: urlStr) {
-                    CachedAsyncImage(url: url) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        userCoverFallback
-                    }
-                } else {
-                    userCoverFallback
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 140)
-            .clipped()
-
-            GAGAAvatar(url: store.user?.avatarURL, size: 88)
-                .background(Circle().fill(.background).padding(-4))
-                .offset(y: -44)
-
-            VStack(spacing: GAGATheme.spacingXS) {
-                Text(store.user?.displayName ?? "")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                if let bio = store.user?.bio, !bio.isEmpty {
-                    Text(bio)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-            }
-            .offset(y: -32)
-        }
-    }
-
-    private var userCoverFallback: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [GAGATheme.deepNavy, GAGATheme.coral.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-    }
+    // MARK: - Stats Row
 
     private var statsRow: some View {
-        HStack {
-            stat(value: store.trips.count, label: "旅行")
-            Divider().frame(height: 32)
-            NavigationLink {
-                FollowListView(userId: userId, initialTab: .followers)
-            } label: {
-                stat(value: store.user?.followersCount ?? 0, label: "フォロワー")
+        HStack(spacing: 16) {
+            GAGAAvatar(url: store.user?.avatarURL, size: 80)
+
+            HStack(spacing: 0) {
+                StatItem(value: "\(visitedCountriesCount)", label: "国")
+                NavigationLink {
+                    FollowListView(userId: userId, initialTab: .followers)
+                } label: {
+                    StatItem(value: "\(store.user?.followersCount ?? 0)", label: "フォロワー")
+                }
+                .buttonStyle(.plain)
+                NavigationLink {
+                    FollowListView(userId: userId, initialTab: .following)
+                } label: {
+                    StatItem(value: "\(store.user?.followingCount ?? 0)", label: "フォロー")
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            Divider().frame(height: 32)
-            NavigationLink {
-                FollowListView(userId: userId, initialTab: .following)
-            } label: {
-                stat(value: store.user?.followingCount ?? 0, label: "フォロー中")
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, GAGATheme.spacingMD)
     }
 
-    private func stat(value: Int, label: String) -> some View {
-        VStack(spacing: 2) {
-            Text("\(value)")
-                .font(.headline)
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
+    // MARK: - Follow Button
 
     private var followButton: some View {
         Button {
             guard let uid = authViewModel.firebaseUID else { return }
-            Task { await store.toggleFollow(currentUserId: uid) }
+            let wasFollowing = store.isFollowing
+            Task {
+                await store.toggleFollow(currentUserId: uid)
+                // 自分の followingCount も即座に反映
+                authViewModel.currentUser?.followingCount += wasFollowing ? -1 : 1
+                if (authViewModel.currentUser?.followingCount ?? 0) < 0 {
+                    authViewModel.currentUser?.followingCount = 0
+                }
+            }
         } label: {
             Text(store.isFollowing ? "フォロー中" : "フォローする")
                 .font(GAGATheme.headlineFont)
@@ -211,41 +184,113 @@ struct UserProfileView: View {
         .padding(.horizontal)
     }
 
-    private var tripsGrid: some View {
-        LazyVGrid(columns: gridColumns, spacing: 12) {
-            ForEach(store.trips) { trip in
-                NavigationLink(value: trip) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        if let urlStr = trip.coverImageURL, let url = URL(string: urlStr) {
-                            CachedAsyncImage(url: url) { image in
-                                image.resizable().scaledToFill()
-                            } placeholder: {
-                                tripPlaceholder
-                            }
-                            .frame(height: 100)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        } else {
-                            tripPlaceholder
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
+    // MARK: - Visited Countries Chips
 
-                        Text(trip.title)
-                            .font(GAGATheme.captionFont)
-                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                            .foregroundStyle(.primary)
+    private var visitedCountriesChips: some View {
+        let countries = Array(Set(allVisitedCountries)).sorted()
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: GAGATheme.spacingSM) {
+                ForEach(countries, id: \.self) { country in
+                    Text("\(flagEmoji(for: country)) \(country)")
+                        .font(GAGATheme.captionFont)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .stroke(GAGATheme.accentGradient, lineWidth: 1.5)
+                        )
+                }
+            }
+            .padding(.horizontal, GAGATheme.spacingMD)
+        }
+    }
 
-                        Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+    // MARK: - Tab Bar
+
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(ProfileTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.spring(duration: 0.3)) {
+                        selectedTab = tab
                     }
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: tab.icon)
+                            .font(.title3)
+                            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+                        Text(tab.label)
+                            .font(.caption2)
+                            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+                        if selectedTab == tab {
+                            Rectangle()
+                                .fill(GAGATheme.accentGradient)
+                                .frame(height: 2)
+                                .matchedGeometryEffect(id: "userTabIndicator", in: tabAnimation)
+                        } else {
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal)
     }
+
+    // MARK: - Tab Content
+
+    @ViewBuilder
+    private var tabContent: some View {
+        Group {
+            switch selectedTab {
+            case .globe:
+                GeometryReader { _ in
+                    GlobeView()
+                        .environment(userTripStore)
+                }
+                .frame(minHeight: 400)
+            case .suitcase:
+                SuitcaseView(
+                    visitedCountries: allVisitedCountries,
+                    userId: userId,
+                    readOnly: true
+                )
+            case .list:
+                tripListContent
+            }
+        }
+        .id(selectedTab)
+        .sensoryFeedback(.selection, trigger: selectedTab)
+    }
+
+    @ViewBuilder
+    private var tripListContent: some View {
+        if store.trips.isEmpty {
+            GAGAEmptyState(
+                icon: "airplane",
+                title: "旅行がまだありません",
+                description: ""
+            )
+            .frame(height: 400)
+        } else {
+            LazyVStack(spacing: 16) {
+                ForEach(store.trips) { trip in
+                    NavigationLink(value: trip) {
+                        ProfileTripCard(trip: trip)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - Block
 
     private func toggleBlock() async {
         guard let uid = authViewModel.firebaseUID else { return }
@@ -259,15 +304,5 @@ struct UserProfileView: View {
         } catch {
             store.errorMessage = error.localizedDescription
         }
-    }
-
-    private var tripPlaceholder: some View {
-        Rectangle()
-            .fill(GAGATheme.deepNavy.opacity(0.08))
-            .frame(height: 100)
-            .overlay {
-                Image(systemName: "airplane")
-                    .foregroundStyle(GAGATheme.coral.opacity(0.4))
-            }
     }
 }

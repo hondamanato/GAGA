@@ -1,5 +1,6 @@
 import SwiftUI
 import MapboxMaps
+import FirebaseFirestore
 
 struct TimelineView: View {
     @Environment(AuthViewModel.self) private var authViewModel
@@ -16,7 +17,7 @@ struct TimelineView: View {
                     CommentsView(trip: trip)
                 }
                 .refreshable {
-                    await tripStore.loadTimeline(currentUserId: authViewModel.firebaseUID)
+                    tripStore.startListening(userId: authViewModel.firebaseUID)
                     await loadUsers(for: tripStore.timeline)
                 }
                 .navigationDestination(for: String.self) { userId in
@@ -74,6 +75,7 @@ struct TimelineView: View {
                             TimelineTripCard(
                                 trip: trip,
                                 user: userCache[trip.userId],
+                                currentUserId: authViewModel.firebaseUID,
                                 isLiked: tripStore.likedTripIds.contains(trip.id),
                                 onLikeTap: {
                                     guard let uid = authViewModel.firebaseUID else { return }
@@ -121,11 +123,14 @@ struct TimelineView: View {
 private struct TimelineTripCard: View {
     let trip: Trip
     let user: AppUser?
+    let currentUserId: String?
     var isLiked: Bool = false
     var onLikeTap: (() -> Void)? = nil
     var onCommentTap: (() -> Void)? = nil
 
     @State private var showHeartOverlay = false
+    @State private var showReportSheet = false
+    @State private var showReportDone = false
 
     private var routeText: String {
         let names = ([trip.origin] + trip.destinations).map {
@@ -282,6 +287,41 @@ private struct TimelineTripCard: View {
         }
         .gagaCard()
         .sensoryFeedback(.impact(flexibility: .soft), trigger: isLiked)
+        .contextMenu {
+            if currentUserId != trip.userId {
+                Button(role: .destructive) {
+                    showReportSheet = true
+                } label: {
+                    Label("報告する", systemImage: "exclamationmark.triangle")
+                }
+            }
+        }
+        .confirmationDialog("報告の理由を選択", isPresented: $showReportSheet, titleVisibility: .visible) {
+            ForEach(ReportReason.allCases, id: \.self) { reason in
+                Button(reason.rawValue) {
+                    Task { await submitReport(reason: reason.rawValue, contentType: "trip", contentId: trip.id, contentOwnerId: trip.userId) }
+                }
+            }
+            Button("キャンセル", role: .cancel) {}
+        }
+        .alert("報告を送信しました", isPresented: $showReportDone) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("ご報告ありがとうございます。内容を確認いたします。")
+        }
+    }
+
+    private func submitReport(reason: String, contentType: String, contentId: String, contentOwnerId: String) async {
+        guard let reporterId = currentUserId else { return }
+        try? await Firestore.firestore().collection("reports").addDocument(data: [
+            "reporterId": reporterId,
+            "contentType": contentType,
+            "contentId": contentId,
+            "contentOwnerId": contentOwnerId,
+            "reason": reason,
+            "createdAt": FieldValue.serverTimestamp()
+        ])
+        showReportDone = true
     }
 
     @ViewBuilder
@@ -321,6 +361,13 @@ private struct TimelineTripCard: View {
                 }
         }
     }
+}
+
+private enum ReportReason: String, CaseIterable {
+    case spam = "スパム"
+    case inappropriate = "不適切な内容"
+    case harassment = "ハラスメント"
+    case other = "その他"
 }
 
 // Make Trip Hashable for NavigationLink

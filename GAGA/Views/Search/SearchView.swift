@@ -49,6 +49,9 @@ struct SearchView: View {
                 }
             }
             .searchable(text: Bindable(store).query, prompt: "ユーザー・国名・地名を検索")
+            .onAppear {
+                store.currentUserId = authViewModel.firebaseUID
+            }
             .onChange(of: store.query) {
                 store.performSearch()
             }

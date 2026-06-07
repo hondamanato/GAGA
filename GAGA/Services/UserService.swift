@@ -136,6 +136,36 @@ struct UserService {
         try await batch.commit()
     }
 
+    // MARK: - Username
+
+    private var usernames: CollectionReference {
+        Firestore.firestore().collection("usernames")
+    }
+
+    func isUsernameAvailable(_ username: String) async throws -> Bool {
+        let doc = try await usernames.document(username.lowercased()).getDocument()
+        return !doc.exists
+    }
+
+    func setUsername(_ username: String, userId: String, oldUsername: String?) async throws {
+        let lower = username.lowercased()
+        let db = Firestore.firestore()
+        let batch = db.batch()
+
+        // 古いユーザーネームを削除
+        if let old = oldUsername, !old.isEmpty {
+            batch.deleteDocument(usernames.document(old.lowercased()))
+        }
+
+        // 新しいユーザーネームを予約
+        batch.setData(["userId": userId], forDocument: usernames.document(lower))
+
+        // ユーザードキュメントを更新
+        batch.updateData(["username": lower], forDocument: users.document(userId))
+
+        try await batch.commit()
+    }
+
     // MARK: - Stickers
 
     func saveStickers(_ stickers: [PlacedSticker], userId: String) async throws {

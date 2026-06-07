@@ -36,31 +36,37 @@ struct LocationCardDetailView: View {
         return f
     }()
 
+    @State private var dragOffset: CGFloat = 0
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             // Full-screen image (user photo > hero asset > satellite)
-            Group {
-                if let urlStr = coverImageURL, let url = URL(string: urlStr) {
-                    CachedAsyncImage(url: url) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        Rectangle().fill(GAGATheme.deepNavy)
-                            .overlay { ProgressView().tint(.white) }
-                    }
-                } else if let asset = heroAssetName {
-                    Image(asset)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    CachedAsyncImage(url: fallbackURL) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        Rectangle().fill(GAGATheme.deepNavy)
-                            .overlay { ProgressView().tint(.white) }
+            GeometryReader { geo in
+                Group {
+                    if let urlStr = coverImageURL, let url = URL(string: urlStr) {
+                        CachedAsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(GAGATheme.deepNavy)
+                                .overlay { ProgressView().tint(.white) }
+                        }
+                    } else if let asset = heroAssetName {
+                        Image(asset)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        CachedAsyncImage(url: fallbackURL) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Rectangle().fill(GAGATheme.deepNavy)
+                                .overlay { ProgressView().tint(.white) }
+                        }
                     }
                 }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
             }
             .ignoresSafeArea()
             .onTapGesture(count: 2) {
@@ -97,8 +103,9 @@ struct LocationCardDetailView: View {
                         Image(systemName: "xmark")
                             .font(.system(size: 17, weight: .bold))
                             .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(.ultraThinMaterial, in: Circle())
+                            .frame(width: 40, height: 40)
+                            .background(.black.opacity(0.5), in: Circle())
+                            .shadow(color: .black.opacity(0.5), radius: 4)
                     }
                     Spacer()
                     PhotosPicker(selection: $selectedItem, matching: .images) {
@@ -175,6 +182,22 @@ struct LocationCardDetailView: View {
                 )
             }
         }
+        .offset(y: dragOffset)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    if value.translation.height > 0 {
+                        dragOffset = value.translation.height
+                    }
+                }
+                .onEnded { value in
+                    if value.translation.height > 120 {
+                        onDismiss()
+                    } else {
+                        withAnimation(.spring(duration: 0.3)) { dragOffset = 0 }
+                    }
+                }
+        )
         .statusBarHidden()
         .onChange(of: selectedItem) { _, newItem in
             guard let newItem else { return }

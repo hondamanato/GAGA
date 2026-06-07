@@ -27,6 +27,42 @@ struct TripService {
         try await collection.document(tripId).delete()
     }
 
+    // MARK: - Listeners
+
+    func listenTrips(for userId: String, onChange: @escaping ([Trip]) -> Void) -> ListenerRegistration {
+        collection
+            .whereField("userId", isEqualTo: userId)
+            .order(by: "departureDate", descending: true)
+            .addSnapshotListener { snapshot, error in
+                guard let docs = snapshot?.documents else { return }
+                let trips = docs.compactMap { try? $0.data(as: Trip.self) }
+                onChange(trips)
+            }
+    }
+
+    func listenTimeline(limit: Int = 20, onChange: @escaping ([Trip], DocumentSnapshot?) -> Void) -> ListenerRegistration {
+        collection
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .addSnapshotListener { snapshot, error in
+                guard let docs = snapshot?.documents else { return }
+                let trips = docs.compactMap { try? $0.data(as: Trip.self) }
+                onChange(trips, docs.last)
+            }
+    }
+
+    func listenComments(tripId: String, onChange: @escaping ([Comment]) -> Void) -> ListenerRegistration {
+        collection
+            .document(tripId)
+            .collection("comments")
+            .order(by: "createdAt")
+            .addSnapshotListener { snapshot, error in
+                guard let docs = snapshot?.documents else { return }
+                let comments = docs.compactMap { try? $0.data(as: Comment.self) }
+                onChange(comments)
+            }
+    }
+
     // MARK: - Timeline
 
     func fetchAllTrips(limit: Int = 20, after lastDocument: DocumentSnapshot? = nil) async throws -> (trips: [Trip], lastDoc: DocumentSnapshot?) {

@@ -3,7 +3,7 @@ import AuthenticationServices
 
 struct LoginView: View {
     @Environment(AuthViewModel.self) private var authViewModel
-    @State private var showingGoogleSoonAlert = false
+    @State private var showEmailAuth = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var onboardingPage = 0
 
@@ -69,11 +69,11 @@ struct LoginView: View {
                     .disabled(authViewModel.isLoading)
 
                     Button {
-                        showingGoogleSoonAlert = true
+                        showEmailAuth = true
                     } label: {
                         HStack {
-                            Image(systemName: "g.circle.fill")
-                            Text("Googleでサインイン")
+                            Image(systemName: "envelope.fill")
+                            Text("メールでサインイン")
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
@@ -83,22 +83,6 @@ struct LoginView: View {
                     }
                     .disabled(authViewModel.isLoading)
 
-                    Button {
-                        Task {
-                            await authViewModel.signInAnonymously()
-                        }
-                    } label: {
-                        VStack(spacing: 2) {
-                            Text("ゲストとして始める")
-                                .foregroundStyle(.gray)
-                            Text("閲覧のみ・投稿にはログインが必要です")
-                                .font(.caption2)
-                                .foregroundStyle(.gray.opacity(0.6))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                    }
-                    .disabled(authViewModel.isLoading)
                 }
                 .padding(.horizontal, GAGATheme.spacingXL)
                 .padding(.bottom, 48)
@@ -118,10 +102,8 @@ struct LoginView: View {
                 }
             }
         }
-        .alert("準備中", isPresented: $showingGoogleSoonAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Googleサインインは近日対応予定です")
+        .sheet(isPresented: $showEmailAuth) {
+            EmailAuthView()
         }
         .alert(
             "サインインに失敗しました",
@@ -183,6 +165,137 @@ struct LoginView: View {
                 }
                 .transition(.opacity)
             }
+        }
+    }
+}
+
+// MARK: - Email Auth
+
+private struct EmailAuthView: View {
+    @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var isSignUp = false
+    @State private var email = ""
+    @State private var password = ""
+    @State private var confirmPassword = ""
+    @State private var displayName = ""
+    @State private var localError: String?
+
+    private var canSubmit: Bool {
+        guard !email.isEmpty, !password.isEmpty else { return false }
+        if isSignUp {
+            guard password == confirmPassword, !displayName.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        }
+        return password.count >= 6
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Picker("", selection: $isSignUp) {
+                    Text("ログイン").tag(false)
+                    Text("新規登録").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+
+                VStack(spacing: 16) {
+                    if isSignUp {
+                        TextField("表示名", text: $displayName)
+                            .textContentType(.name)
+                            .padding(12)
+                            .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    }
+
+                    TextField("メールアドレス", text: $email)
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .padding(12)
+                        .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+
+                    SecureField("パスワード（6文字以上）", text: $password)
+                        .textContentType(isSignUp ? .newPassword : .password)
+                        .padding(12)
+                        .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+
+                    if isSignUp {
+                        SecureField("パスワード確認", text: $confirmPassword)
+                            .textContentType(.newPassword)
+                            .padding(12)
+                            .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+                .padding(.horizontal)
+
+                if let error = localError ?? authViewModel.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal)
+                }
+
+                Button {
+                    Task { await submit() }
+                } label: {
+                    Group {
+                        if authViewModel.isLoading {
+                            ProgressView().tint(.white)
+                        } else {
+                            Text(isSignUp ? "登録" : "ログイン")
+                                .font(GAGATheme.headlineFont)
+                        }
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(canSubmit ? AnyShapeStyle(GAGATheme.accentGradient) : AnyShapeStyle(.gray.opacity(0.3)), in: RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(!canSubmit || authViewModel.isLoading)
+                .padding(.horizontal)
+
+                Spacer()
+            }
+            .padding(.top, 20)
+            .navigationTitle(isSignUp ? "新規登録" : "ログイン")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") { dismiss() }
+                }
+            }
+            .onChange(of: isSignUp) { _, _ in
+                localError = nil
+                authViewModel.errorMessage = nil
+            }
+        }
+    }
+
+    private func submit() async {
+        localError = nil
+        authViewModel.errorMessage = nil
+
+        if isSignUp {
+            if password != confirmPassword {
+                localError = "パスワードが一致しません"
+                return
+            }
+            await authViewModel.signUpWithEmail(
+                email: email.trimmingCharacters(in: .whitespaces),
+                password: password,
+                displayName: displayName.trimmingCharacters(in: .whitespaces)
+            )
+        } else {
+            await authViewModel.signInWithEmail(
+                email: email.trimmingCharacters(in: .whitespaces),
+                password: password
+            )
+        }
+
+        if authViewModel.errorMessage == nil {
+            dismiss()
         }
     }
 }

@@ -12,6 +12,15 @@ struct ContentView: View {
     @Environment(TripStore.self) private var tripStore
     @Environment(PostStore.self) private var postStore
     @State private var selectedTab = 0
+    @AppStorage("app_theme") private var appTheme = 0
+
+    private var colorScheme: ColorScheme? {
+        switch appTheme {
+        case 1: return .light
+        case 2: return .dark
+        default: return nil
+        }
+    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -27,14 +36,18 @@ struct ContentView: View {
                 TripListView()
             }
 
-            Tab("プロフィール", systemImage: "person.fill", value: 3) {
+            Tab("検索", systemImage: "magnifyingglass", value: 3) {
+                SearchView()
+            }
+
+            Tab("プロフィール", systemImage: "person.fill", value: 4) {
                 ProfileView()
             }
         }
-        .tint(.blue)
+        .preferredColorScheme(colorScheme)
+        .tint(GAGATheme.coral)
         .task(id: authViewModel.firebaseUID) {
-            await tripStore.load(userId: authViewModel.firebaseUID)
-            await postStore.loadTimeline(currentUserId: authViewModel.firebaseUID)
+            tripStore.startListening(userId: authViewModel.firebaseUID)
         }
     }
 }

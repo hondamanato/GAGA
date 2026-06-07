@@ -15,6 +15,11 @@ struct GlobeView: View {
     @State private var cameraTick: Int = 0
     @State private var mapRef: MapboxMap?
     @State private var tappedLabel: TappedLabel?
+    @State private var isZoomedIn = false
+    @State private var currentZoom: Double = 0.3
+    @State private var selectedPin: PinData?
+    @State private var navigateToTrip: Trip?
+    @State private var navigateToLocationIndex: Int?
 
     var body: some View {
         ZStack {
@@ -26,9 +31,14 @@ struct GlobeView: View {
                     labelTapInteractions
                 }
                 .mapStyle(.satelliteStreets)
-                .onCameraChanged { _ in
+                .ornamentOptions(OrnamentOptions(
+                    scaleBar: ScaleBarViewOptions(visibility: .hidden),
+                    compass: CompassViewOptions(visibility: .hidden)
+                ))
+                .onCameraChanged { context in
                     mapRef = proxy.map
                     cameraTick &+= 1
+                    currentZoom = context.cameraState.zoom
                 }
                 .onStyleLoaded { _ in
                     mapRef = proxy.map
@@ -62,6 +72,60 @@ struct GlobeView: View {
                 }
             }
             .ignoresSafeArea()
+
+            // ズームアウトボタン
+            if isZoomedIn {
+                VStack {
+                    HStack {
+                        Button {
+                            isZoomedIn = false
+                            withAnimation { selectedPin = nil }
+                            withViewportAnimation(.fly) {
+                                viewport = .camera(
+                                    center: CLLocationCoordinate2D(latitude: 15, longitude: 15),
+                                    zoom: 0.3, bearing: 0, pitch: 0
+                                )
+                            }
+                        } label: {
+                            Image(systemName: "globe.asia.australia")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 60)
+                    Spacer()
+                }
+                .transition(.opacity)
+            }
+
+            // ピンタップ時のコンパクト旅行カード
+            if let pin = selectedPin {
+                VStack(spacing: 8) {
+                    Spacer()
+                    let trips = tripsForLocation(pin.location)
+                    ForEach(trips) { trip in
+                        GlobeTripCard(trip: trip)
+                            .onTapGesture {
+                                // 選択中のピンに対応するロケーションインデックスを計算
+                                let allLocations = [trip.origin] + trip.destinations
+                                navigateToLocationIndex = allLocations.firstIndex(where: { $0.id == pin.location.id }) ?? 0
+                                navigateToTrip = trip
+                            }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .fullScreenCover(item: $navigateToTrip) { trip in
+            NavigationStack {
+                TripJournalView(initialTrip: trip, initialLocationIndex: navigateToLocationIndex)
+            }
         }
         .sheet(item: $tappedLabel) { label in
             LocationPostsView(tappedLabel: label)
@@ -80,16 +144,21 @@ struct GlobeView: View {
         }
     }
 
+    /// 飛行機アイコンもズームに連動してフェードイン
+    private var planeOpacity: Double {
+        let t = (currentZoom - 1.5) / 1.5  // 1.5〜3.0 で 0→1
+        return min(max(t, 0), 1)
+    }
+
     @MapContentBuilder
     private var planeAnnotations: some MapContent {
         ForEvery(routeSegments, id: \.id) { segment in
             MapViewAnnotation(coordinate: segment.midpoint) {
-                // cameraTick を参照することでカメラ変化時に再評価される
                 let angle = screenAngle(for: segment, tick: cameraTick)
                 Image(systemName: "airplane")
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.6), radius: 2)
+                    .foregroundStyle(.white.opacity(planeOpacity))
+                    .shadow(color: .black.opacity(0.6 * planeOpacity), radius: 2)
                     .rotationEffect(.degrees(angle))
                     .allowsHitTesting(false)
             }
@@ -118,19 +187,31 @@ struct GlobeView: View {
         return atan2(dy, dx) * 180 / .pi
     }
 
+    /// ズームレベルに応じて徐々にフェードイン (zoom 1.5〜3.0 で 0→0.95)
     private func makeRouteLayer(for segment: RouteSegment) -> LineLayer {
         var layer = LineLayer(id: "route-layer-\(segment.id)", source: "route-source-\(segment.id)")
         layer.lineColor = .constant(StyleColor(UIColor.white))
-        layer.lineWidth = .constant(3.5)
-        layer.lineOpacity = .constant(0.95)
+        layer.lineWidth = .expression(
+            Exp(.interpolate) { Exp(.linear); Exp(.zoom); 1.5; 0.0; 3.0; 3.5 }
+        )
+        layer.lineOpacity = .expression(
+            Exp(.interpolate) { Exp(.linear); Exp(.zoom); 1.5; 0.0; 3.0; 0.95 }
+        )
         layer.lineDasharray = .constant([2, 2])
         layer.lineCap = .constant(.round)
         return layer
     }
 
     private var routeSegments: [RouteSegment] {
+        // ピン選択時はその場所を含む旅行のルートだけ表示
+        let trips: [Trip]
+        if let pin = selectedPin {
+            trips = tripsForLocation(pin.location)
+        } else {
+            trips = tripStore.trips
+        }
         var segments: [RouteSegment] = []
-        for trip in tripStore.trips {
+        for trip in trips {
             var previous = trip.origin
             for (index, dest) in trip.destinations.enumerated() {
                 let coords = generateGreatCirclePath(
@@ -168,31 +249,46 @@ struct GlobeView: View {
 
     // MARK: - Label Tap
 
-    private static let tappableLayers = [
-        "country-label", "state-label", "settlement-label",
+    private static let countryLayers = [
+        "country-label",
+    ]
+
+    private static let cityLayers = [
+        "state-label", "settlement-label",
         "settlement-subdivision-label",
+        "settlement-major-label", "settlement-minor-label",
+        "place-city-label", "place-town-label", "place-village-label",
     ]
 
     @MapContentBuilder
     private var labelTapInteractions: some MapContent {
-        ForEvery(Self.tappableLayers, id: \.self) { layerId in
+        ForEvery(Self.countryLayers, id: \.self) { layerId in
             TapInteraction(.layer(layerId)) { feature, context in
-                let props = feature.properties
-                guard let name = Self.stringValue(props["name"] as? JSONValue)
-                    ?? Self.stringValue(props["name_en"] as? JSONValue) else {
-                    return false
-                }
-                let isCountry = layerId == "country-label"
-                let coord = context.coordinate
+                guard let name = Self.labelName(from: feature.properties) else { return false }
                 tappedLabel = TappedLabel(
-                    name: name,
-                    isCountry: isCountry,
-                    latitude: coord.latitude,
-                    longitude: coord.longitude
+                    name: name, isCountry: true,
+                    latitude: context.coordinate.latitude,
+                    longitude: context.coordinate.longitude
                 )
                 return true
             }
         }
+        ForEvery(Self.cityLayers, id: \.self) { layerId in
+            TapInteraction(.layer(layerId)) { feature, context in
+                guard let name = Self.labelName(from: feature.properties) else { return false }
+                tappedLabel = TappedLabel(
+                    name: name, isCountry: false,
+                    latitude: context.coordinate.latitude,
+                    longitude: context.coordinate.longitude
+                )
+                return true
+            }
+        }
+    }
+
+    private static func labelName(from props: [String: Any?]) -> String? {
+        stringValue(props["name"] as? JSONValue)
+            ?? stringValue(props["name_en"] as? JSONValue)
     }
 
     private static func stringValue(_ value: JSONValue?) -> String? {
@@ -204,37 +300,96 @@ struct GlobeView: View {
 
     @MapContentBuilder
     private var pinAnnotations: some MapContent {
-        ForEvery(uniquePins, id: \.name) { pin in
-            MapViewAnnotation(coordinate: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)) {
-                VStack(spacing: 2) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.white)
-                        .background(Circle().fill(.blue))
-                        .shadow(radius: 3)
-                    Text(pin.name)
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Capsule().fill(.black.opacity(0.6)))
+        ForEvery(uniquePins, id: \.id) { pin in
+            MapViewAnnotation(coordinate: CLLocationCoordinate2D(
+                latitude: pin.location.latitude,
+                longitude: pin.location.longitude
+            )) {
+                Group {
+                    let isSelected = selectedPin?.id == pin.id
+                    pinImage(for: pin)
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(isSelected ? .blue : .white, lineWidth: isSelected ? 3 : 2.5))
+                        .shadow(color: isSelected ? .blue.opacity(0.5) : .black.opacity(0.3), radius: isSelected ? 6 : 3, y: 1)
+                }
+                .onTapGesture {
+                    isZoomedIn = true
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        selectedPin = pin
+                    }
+                    withViewportAnimation(.fly) {
+                        viewport = .camera(
+                            center: CLLocationCoordinate2D(
+                                latitude: pin.location.latitude,
+                                longitude: pin.location.longitude
+                            ),
+                            zoom: 5, bearing: 0, pitch: 0
+                        )
+                    }
                 }
             }
         }
     }
 
-    private var uniquePins: [Location] {
+    @ViewBuilder
+    private func pinImage(for pin: PinData) -> some View {
+        if let urlString = pin.imageURL, let url = URL(string: urlString) {
+            CachedAsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                pinFallbackImage(for: pin.location)
+            }
+        } else if let asset = LocationPostsView.heroAssets[pin.location.country] {
+            Image(asset)
+                .resizable()
+                .scaledToFill()
+        } else {
+            let token = MapboxOptions.accessToken
+            let urlStr = "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/\(pin.location.longitude),\(pin.location.latitude),10,0/100x100@2x?access_token=\(token)"
+            CachedAsyncImage(url: URL(string: urlStr)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Circle().fill(GAGATheme.deepNavy.opacity(0.5))
+            }
+        }
+    }
+
+    private func pinFallbackImage(for location: Location) -> some View {
+        Circle().fill(GAGATheme.deepNavy.opacity(0.5))
+            .overlay { ProgressView().tint(.white).scaleEffect(0.5) }
+    }
+
+    private func defaultPinView(isSelected: Bool = false) -> some View {
+        Circle()
+            .fill(.white)
+            .frame(width: isSelected ? 20 : 16, height: isSelected ? 20 : 16)
+            .overlay(Circle().fill(.blue).frame(width: isSelected ? 14 : 10, height: isSelected ? 14 : 10))
+            .overlay(isSelected ? Circle().stroke(.blue, lineWidth: 2) : nil)
+            .shadow(color: isSelected ? .blue.opacity(0.5) : .black.opacity(0.3), radius: isSelected ? 6 : 2, y: 1)
+    }
+
+    private var uniquePins: [PinData] {
         var seen = Set<String>()
-        var result: [Location] = []
+        var result: [PinData] = []
         for trip in tripStore.trips {
             for location in [trip.origin] + trip.destinations {
-                if seen.insert(location.name).inserted {
-                    result.append(location)
+                if seen.insert(location.id).inserted {
+                    let imageURL = tripStore.trips
+                        .lazy
+                        .compactMap { $0.locationCoverImages[location.id] }
+                        .first
+                    result.append(PinData(location: location, imageURL: imageURL))
                 }
             }
         }
         return result
+    }
+
+    private func tripsForLocation(_ location: Location) -> [Trip] {
+        tripStore.trips.filter { trip in
+            ([trip.origin] + trip.destinations).contains(where: { $0.id == location.id })
+        }
     }
 
     // generateGreatCirclePath / geoBearing は Utilities/GeoMath.swift に定義
@@ -246,6 +401,113 @@ struct TappedLabel: Identifiable {
     let isCountry: Bool
     let latitude: Double
     let longitude: Double
+}
+
+private struct PinData: Identifiable, Equatable {
+    var id: String { location.id }
+    let location: Location
+    let imageURL: String?
+}
+
+// MARK: - Globe Trip Card (コンパクト)
+
+private struct GlobeTripCard: View {
+    let trip: Trip
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        return f
+    }()
+
+    private var routeText: String {
+        let names = ([trip.origin] + trip.destinations).map {
+            flagEmoji(for: $0.country) + " " + $0.name
+        }
+        return names.joined(separator: " → ")
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            thumbnail
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(trip.title)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                Text(routeText)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1)
+
+                HStack(spacing: 8) {
+                    Text(trip.status.rawValue)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(GAGATheme.tripStatusColor(trip.status).opacity(0.4), in: Capsule())
+                        .foregroundStyle(.white)
+
+                    HStack(spacing: 3) {
+                        Image(systemName: "calendar")
+                            .font(.caption2)
+                        Text("\(Self.dateFormatter.string(from: trip.departureDate)) - \(Self.dateFormatter.string(from: trip.returnDate))")
+                            .font(.caption2)
+                    }
+                    .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .padding(10)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        if let urlStr = trip.coverImageURL, let url = URL(string: urlStr) {
+            CachedAsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                fallbackThumbnail
+            }
+        } else if let dest = trip.destinations.first,
+                  let asset = LocationPostsView.heroAssets[dest.country] {
+            Image(asset)
+                .resizable()
+                .scaledToFill()
+        } else if let dest = trip.destinations.first {
+            let token = MapboxOptions.accessToken
+            let urlStr = "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/\(dest.longitude),\(dest.latitude),8,0/200x200@2x?access_token=\(token)"
+            CachedAsyncImage(url: URL(string: urlStr)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                fallbackThumbnail
+            }
+        } else {
+            fallbackThumbnail
+        }
+    }
+
+    private var fallbackThumbnail: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(GAGATheme.deepNavy.opacity(0.5))
+            .overlay {
+                Image(systemName: "airplane")
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+    }
 }
 
 private struct RouteSegment {

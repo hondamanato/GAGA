@@ -5,13 +5,46 @@ import FirebaseAuth
 
 struct EditProfileView: View {
     @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var username = ""
     @State private var displayName = ""
     @State private var bio = ""
     @State private var isSaving = false
     @State private var showSaved = false
+    @State private var usernameStatus: UsernameStatus = .idle
+
+    private let userService = UserService()
+
+    private enum UsernameStatus: Equatable {
+        case idle, checking, available, taken, invalid
+    }
+
+    private var isUsernameValid: Bool {
+        username.range(of: "^[a-z0-9_]{3,20}$", options: .regularExpression) != nil
+    }
 
     var body: some View {
         Form {
+            Section {
+                HStack {
+                    Text("@")
+                        .foregroundStyle(.secondary)
+                    TextField("username", text: $username)
+                        .font(GAGATheme.bodyFont)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .onChange(of: username) { _, newValue in
+                            username = newValue.lowercased()
+                            checkUsername()
+                        }
+                    usernameIndicator
+                }
+            } header: {
+                Text("ユーザーネーム")
+            } footer: {
+                Text("英小文字・数字・アンダースコア、3〜20文字")
+                    .font(.caption2)
+            }
             Section("表示名") {
                 TextField("名前を入力", text: $displayName)
                     .font(GAGATheme.bodyFont)
@@ -29,12 +62,16 @@ struct EditProfileView: View {
                 Button("保存") {
                     Task {
                         isSaving = true
-                        await authViewModel.updateProfile(displayName: displayName, bio: bio)
+                        await authViewModel.updateProfile(
+                            displayName: displayName,
+                            bio: bio,
+                            username: username != authViewModel.currentUser?.username ? username : nil
+                        )
                         isSaving = false
-                        showSaved = true
+                        dismiss()
                     }
                 }
-                .disabled(isSaving || displayName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(isSaving || displayName.trimmingCharacters(in: .whitespaces).isEmpty || !canSave)
             }
         }
         .overlay {
@@ -44,8 +81,67 @@ struct EditProfileView: View {
         }
         .onAppear {
             if let user = authViewModel.currentUser {
+                username = user.username
                 displayName = user.displayName
                 bio = user.bio
+                usernameStatus = user.username.isEmpty ? .idle : .available
+            }
+        }
+    }
+
+    private var canSave: Bool {
+        if username.isEmpty { return true }
+        if username == authViewModel.currentUser?.username { return true }
+        return usernameStatus == .available
+    }
+
+    @ViewBuilder
+    private var usernameIndicator: some View {
+        switch usernameStatus {
+        case .idle:
+            EmptyView()
+        case .checking:
+            ProgressView()
+                .controlSize(.small)
+        case .available:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case .taken:
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.red)
+        case .invalid:
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(.orange)
+        }
+    }
+
+    private func checkUsername() {
+        let current = username
+        if current.isEmpty {
+            usernameStatus = .idle
+            return
+        }
+        if current == authViewModel.currentUser?.username {
+            usernameStatus = .available
+            return
+        }
+        if !isUsernameValid {
+            usernameStatus = .invalid
+            return
+        }
+        usernameStatus = .checking
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard username == current else { return }
+            do {
+                let available = try await userService.isUsernameAvailable(current)
+                if username == current {
+                    usernameStatus = available ? .available : .taken
+                }
+            } catch {
+                if username == current {
+                    usernameStatus = .available
+                }
             }
         }
     }
@@ -742,8 +838,11 @@ struct LicensesView: View {
 
 struct DeleteAccountView: View {
     @Environment(AuthViewModel.self) private var authViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var showConfirm = false
     @State private var confirmText = ""
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     var body: some View {
         Form {
@@ -761,21 +860,50 @@ struct DeleteAccountView: View {
 
             Section {
                 TextField("確認のため「削除」と入力", text: $confirmText)
+                    .disabled(isDeleting)
                 Button("アカウントを削除", role: .destructive) {
                     showConfirm = true
                 }
-                .disabled(confirmText != "削除")
+                .disabled(confirmText != "削除" || isDeleting)
+            }
+
+            if isDeleting {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text("アカウントを削除中...")
+                            .font(GAGATheme.bodyFont)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
         .navigationTitle("アカウント削除")
         .navigationBarTitleDisplayMode(.inline)
         .alert("本当に削除しますか？", isPresented: $showConfirm) {
             Button("削除する", role: .destructive) {
-                authViewModel.signOut()
+                Task {
+                    isDeleting = true
+                    await authViewModel.deleteAccount()
+                    isDeleting = false
+                    if authViewModel.errorMessage == nil {
+                        dismiss()
+                    } else {
+                        deleteError = authViewModel.errorMessage
+                    }
+                }
             }
             Button("キャンセル", role: .cancel) {}
         } message: {
             Text("この操作は取り消せません。すべてのデータが削除されます。")
+        }
+        .alert("削除に失敗しました", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK", role: .cancel) { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
         }
     }
 }

@@ -1,123 +1,174 @@
 import SwiftUI
+import MapKit
 
 struct CreateTripView: View {
+    var editingTrip: Trip?
+
     @Environment(\.dismiss) private var dismiss
     @Environment(AuthViewModel.self) private var authViewModel
     @Environment(TripStore.self) private var tripStore
 
     @State private var title = ""
     @State private var origin: Location = CityCatalog.all[0]
-    @State private var destinations: [Location] = [CityCatalog.all[13]]
-    @State private var departureDate = Date.now
-    @State private var returnDate = Date.now.addingTimeInterval(86400 * 7)
+    @State private var destinations: [Location] = []
+    @State private var departureDate: Date? = Calendar.current.startOfDay(for: .now)
+    @State private var returnDate: Date? = Calendar.current.startOfDay(for: .now).addingTimeInterval(86400 * 7)
+    @State private var showCalendar = false
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var pickerTarget: PickerTarget?
-    @State private var daySpots: [[String]] = Array(repeating: [], count: 8) // 日数分の spots
-    @State private var dayNotes: [String] = Array(repeating: "", count: 8)
-    @State private var newSpotText: [Int: String] = [:]
+    @State private var didLoadEditing = false
+
+    private var isEditing: Bool { editingTrip != nil }
 
     private var numberOfDays: Int {
+        guard let dep = departureDate, let ret = returnDate else { return 1 }
         let cal = Calendar.current
-        let days = (cal.dateComponents([.day], from: cal.startOfDay(for: departureDate), to: cal.startOfDay(for: returnDate)).day ?? 0) + 1
+        let days = (cal.dateComponents([.day], from: cal.startOfDay(for: dep), to: cal.startOfDay(for: ret)).day ?? 0) + 1
         return max(days, 1)
     }
 
     private var canSave: Bool {
         !title.trimmingCharacters(in: .whitespaces).isEmpty
             && !destinations.isEmpty
-            && departureDate <= returnDate
+            && departureDate != nil
+            && returnDate != nil
             && !isSaving
     }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("旅行タイトル") {
-                    TextField("例: パリ一人旅", text: $title)
-                }
-
-                Section("日程") {
-                    DatePicker("出発日", selection: $departureDate, displayedComponents: .date)
-                    DatePicker("帰国日", selection: $returnDate, in: departureDate..., displayedComponents: .date)
-                }
-
-                Section("出発地") {
-                    Button {
-                        pickerTarget = .origin
-                    } label: {
-                        locationRow(origin)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // 旅行タイトル
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("旅行タイトル")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.secondary)
+                        TextField("例: パリ一人旅", text: $title)
+                            .font(GAGATheme.bodyFont)
+                            .padding(14)
+                            .background(.gray.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    .buttonStyle(.plain)
-                }
 
-                Section("目的地") {
-                    ForEach(destinations.indices, id: \.self) { index in
+                    // 日程
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("日程")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.secondary)
                         Button {
-                            pickerTarget = .destination(index)
+                            showCalendar = true
                         } label: {
-                            locationRow(destinations[index])
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("出発日")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    Text(departureDate.map { formatDateJP($0) } ?? "未設定")
+                                        .font(GAGATheme.headlineFont)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("帰国日")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    Text(returnDate.map { formatDateJP($0) } ?? "未設定")
+                                        .font(GAGATheme.headlineFont)
+                                }
+                            }
+                            .padding(14)
+                            .background(.gray.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.plain)
+
+                        if departureDate != nil && returnDate != nil {
+                            HStack {
+                                Image(systemName: "calendar")
+                                    .foregroundStyle(GAGATheme.coral)
+                                Text("\(numberOfDays)日間の旅")
+                                    .font(GAGATheme.headlineFont)
+                                    .contentTransition(.numericText())
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(GAGATheme.coral.opacity(0.1))
+                            .clipShape(Capsule())
+                            .animation(.spring(duration: 0.3), value: numberOfDays)
+                        }
+                    }
+
+                    // 出発地
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("出発地")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.secondary)
+                        Button {
+                            pickerTarget = .origin
+                        } label: {
+                            HStack {
+                                Text("\(flagEmoji(for: origin.country)) \(origin.name)")
+                                    .font(GAGATheme.bodyFont)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(14)
+                            .background(.gray.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
                         .buttonStyle(.plain)
                     }
-                    .onDelete { offsets in
-                        destinations.remove(atOffsets: offsets)
-                    }
 
-                    Button {
-                        pickerTarget = .destinationNew
-                    } label: {
-                        Label("目的地を追加", systemImage: "plus.circle.fill")
-                    }
-                }
+                    // 目的地
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("目的地")
+                            .font(GAGATheme.captionFont)
+                            .foregroundStyle(.secondary)
 
-                ForEach(0..<numberOfDays, id: \.self) { dayIndex in
-                    Section {
-                        let spots = dayIndex < daySpots.count ? daySpots[dayIndex] : []
-                        ForEach(spots.indices, id: \.self) { spotIndex in
+                        ForEach(destinations, id: \.self) { dest in
                             HStack {
-                                Image(systemName: "mappin")
-                                    .foregroundStyle(.secondary)
-                                Text(spots[spotIndex])
+                                Text("\(flagEmoji(for: dest.country)) \(dest.name)")
+                                    .font(GAGATheme.bodyFont)
+                                Spacer()
+                                Button {
+                                    destinations.removeAll { $0 == dest }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.secondary)
+                                }
                             }
-                        }
-                        .onDelete { offsets in
-                            ensureCapacity(dayIndex)
-                            daySpots[dayIndex].remove(atOffsets: offsets)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(.gray.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
-                        HStack {
-                            TextField("場所を追加", text: Binding(
-                                get: { newSpotText[dayIndex] ?? "" },
-                                set: { newSpotText[dayIndex] = $0 }
-                            ))
-                            Button {
-                                let text = (newSpotText[dayIndex] ?? "").trimmingCharacters(in: .whitespaces)
-                                guard !text.isEmpty else { return }
-                                ensureCapacity(dayIndex)
-                                daySpots[dayIndex].append(text)
-                                newSpotText[dayIndex] = ""
-                            } label: {
+                        Button {
+                            pickerTarget = .destinationNew
+                        } label: {
+                            HStack {
                                 Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(GAGATheme.coral)
+                                Text(destinations.isEmpty ? "目的地を追加" : "他の場所を追加")
+                                    .font(GAGATheme.bodyFont)
                             }
-                            .disabled((newSpotText[dayIndex] ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(.gray.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
-
-                        TextField("メモ（任意）", text: Binding(
-                            get: { dayIndex < dayNotes.count ? dayNotes[dayIndex] : "" },
-                            set: { val in ensureCapacity(dayIndex); dayNotes[dayIndex] = val }
-                        ), axis: .vertical)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    } header: {
-                        let date = Calendar.current.date(byAdding: .day, value: dayIndex, to: departureDate) ?? departureDate
-                        Text("\(dayIndex + 1)日目 — \(date.formatted(date: .abbreviated, time: .omitted))")
+                        .buttonStyle(.plain)
                     }
                 }
-
+                .padding(20)
             }
-            .navigationTitle("旅行を作成")
+            .navigationTitle(isEditing ? "旅行を編集" : "旅行を作成")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -125,24 +176,31 @@ struct CreateTripView: View {
                         .disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("作成") {
+                    Button(isEditing ? "更新" : "作成") {
                         Task { await save() }
                     }
+                    .fontWeight(.semibold)
                     .disabled(!canSave)
                 }
             }
-            .onChange(of: departureDate) { _, _ in ensureCapacity(numberOfDays - 1) }
-            .onChange(of: returnDate) { _, _ in ensureCapacity(numberOfDays - 1) }
+            .sheet(isPresented: $showCalendar) {
+                CalendarRangePickerView(startDate: departureDate, endDate: returnDate) { start, end in
+                    departureDate = start
+                    returnDate = end
+                }
+                .presentationCornerRadius(24)
+            }
             .sheet(item: $pickerTarget) { target in
                 LocationPickerSheet { location in
                     apply(location, to: target)
                 }
+                .presentationCornerRadius(24)
             }
             .overlay {
                 if isSaving {
                     ProgressView()
-                        .progressViewStyle(.circular)
-                        .scaleEffect(1.5)
+                        .padding(24)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: GAGATheme.cardRadius))
                 }
             }
             .alert(
@@ -156,27 +214,19 @@ struct CreateTripView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+            .onAppear {
+                guard let trip = editingTrip, !didLoadEditing else { return }
+                didLoadEditing = true
+                title = trip.title
+                origin = trip.origin
+                destinations = trip.destinations
+                departureDate = trip.departureDate
+                returnDate = trip.returnDate
+            }
         }
     }
 
-    @ViewBuilder
-    private func locationRow(_ location: Location) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(location.name)
-                    .foregroundStyle(.primary)
-                if !location.country.isEmpty {
-                    Text(location.country)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
+    // MARK: - Helpers
 
     private func apply(_ location: Location, to target: PickerTarget) {
         switch target {
@@ -190,19 +240,11 @@ struct CreateTripView: View {
         }
     }
 
-    private func ensureCapacity(_ dayIndex: Int) {
-        while daySpots.count <= dayIndex { daySpots.append([]) }
-        while dayNotes.count <= dayIndex { dayNotes.append("") }
-    }
-
-    private func buildSchedule() -> [DaySchedule] {
-        let cal = Calendar.current
-        return (0..<numberOfDays).map { i in
-            let date = cal.date(byAdding: .day, value: i, to: departureDate) ?? departureDate
-            let spots = i < daySpots.count ? daySpots[i] : []
-            let notes = i < dayNotes.count ? dayNotes[i] : ""
-            return DaySchedule(date: date, spots: spots, notes: notes.trimmingCharacters(in: .whitespaces))
-        }
+    private func formatDateJP(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.dateFormat = "M月d日"
+        return f.string(from: date)
     }
 
     private func save() async {
@@ -210,21 +252,48 @@ struct CreateTripView: View {
             errorMessage = "サインインが必要です"
             return
         }
+        guard let dep = departureDate, let ret = returnDate else {
+            errorMessage = "日程を設定してください"
+            return
+        }
         isSaving = true
         defer { isSaving = false }
 
-        let trip = Trip(
-            userId: uid,
-            title: title.trimmingCharacters(in: .whitespaces),
-            origin: origin,
-            destinations: destinations,
-            departureDate: departureDate,
-            returnDate: returnDate,
-            schedule: buildSchedule()
-        )
+        let trip: Trip
+        if let existing = editingTrip {
+            trip = Trip(
+                id: existing.id,
+                userId: existing.userId,
+                title: title.trimmingCharacters(in: .whitespaces),
+                origin: origin,
+                destinations: destinations,
+                departureDate: dep,
+                returnDate: ret,
+                status: existing.status,
+                schedule: existing.schedule,
+                coverImageURL: existing.coverImageURL,
+                likesCount: existing.likesCount,
+                commentsCount: existing.commentsCount,
+                createdAt: existing.createdAt
+            )
+        } else {
+            trip = Trip(
+                userId: uid,
+                title: title.trimmingCharacters(in: .whitespaces),
+                origin: origin,
+                destinations: destinations,
+                departureDate: dep,
+                returnDate: ret
+            )
+        }
 
         do {
-            try await TripService().create(trip)
+            if isEditing {
+                try await TripService().update(trip)
+                tripStore.applyUpdate(trip)
+            } else {
+                try await TripService().create(trip)
+            }
             await tripStore.load(userId: uid)
             dismiss()
         } catch {
@@ -232,6 +301,8 @@ struct CreateTripView: View {
         }
     }
 }
+
+// MARK: - Picker Types
 
 private enum PickerTarget: Identifiable {
     case origin
@@ -247,58 +318,82 @@ private enum PickerTarget: Identifiable {
     }
 }
 
-private struct LocationPickerSheet: View {
+struct LocationPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
+    @State private var searchResults: [Location] = []
+    @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
     let onSelect: (Location) -> Void
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespaces)
     }
 
-    private var filtered: [Location] {
-        guard !trimmedQuery.isEmpty else { return CityCatalog.all }
-        return CityCatalog.all.filter {
-            $0.name.localizedCaseInsensitiveContains(trimmedQuery)
-                || $0.country.localizedCaseInsensitiveContains(trimmedQuery)
-        }
+    private func kanaPrefix(_ text: String, _ prefix: String) -> Bool {
+        let t = text.applyingTransform(.hiraganaToKatakana, reverse: false) ?? text
+        let p = prefix.applyingTransform(.hiraganaToKatakana, reverse: false) ?? prefix
+        return t.hasPrefix(p)
     }
 
-    private var showCustomAdd: Bool {
-        !trimmedQuery.isEmpty
-            && !filtered.contains { $0.name.caseInsensitiveCompare(trimmedQuery) == .orderedSame }
+    private var localFiltered: [Location] {
+        guard !trimmedQuery.isEmpty else { return CityCatalog.all }
+        let q = trimmedQuery
+        let countries = CityCatalog.countries.filter {
+            kanaPrefix($0.name, q)
+        }
+        let cities = CityCatalog.all.filter {
+            kanaPrefix($0.name, q) || kanaPrefix($0.country, q)
+        }
+        return countries + cities
+    }
+
+    private var displayResults: [Location] {
+        if trimmedQuery.isEmpty {
+            return CityCatalog.all
+        }
+        var seen: Set<String> = []
+        var merged: [Location] = []
+        for loc in localFiltered + searchResults {
+            let key = "\(loc.name)-\(loc.country)"
+            if seen.insert(key).inserted {
+                merged.append(loc)
+            }
+        }
+        return merged
     }
 
     var body: some View {
         NavigationStack {
             List {
-                if showCustomAdd {
-                    Button {
-                        let custom = Location(
-                            name: trimmedQuery,
-                            country: "",
-                            latitude: 0,
-                            longitude: 0
-                        )
-                        onSelect(custom)
-                        dismiss()
-                    } label: {
-                        Label("「\(trimmedQuery)」を追加", systemImage: "plus.circle.fill")
-                    }
+                if !trimmedQuery.isEmpty && displayResults.isEmpty && !isSearching {
+                    ContentUnavailableView.search(text: trimmedQuery)
                 }
 
-                ForEach(filtered, id: \.self) { city in
+                ForEach(displayResults, id: \.self) { city in
                     Button {
                         onSelect(city)
                         dismiss()
                     } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(city.name)
-                                .foregroundStyle(.primary)
-                            Text(city.country)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        HStack {
+                            Text(flagEmoji(for: city.country))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(city.name)
+                                    .font(GAGATheme.bodyFont)
+                                    .foregroundStyle(.primary)
+                                Text(city.country)
+                                    .font(GAGATheme.captionFont)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                    }
+                }
+
+                if isSearching {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
                     }
                 }
             }
@@ -308,6 +403,48 @@ private struct LocationPickerSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") { dismiss() }
                 }
+            }
+            .onChange(of: query) { _, newValue in
+                searchTask?.cancel()
+                let q = newValue.trimmingCharacters(in: .whitespaces)
+                guard q.count >= 2 else {
+                    searchResults = []
+                    return
+                }
+                searchTask = Task {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    guard !Task.isCancelled else { return }
+                    await search(query: q)
+                }
+            }
+        }
+    }
+
+    private func search(query: String) async {
+        isSearching = true
+        defer { isSearching = false }
+
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        request.resultTypes = .address
+
+        do {
+            let search = MKLocalSearch(request: request)
+            let response = try await search.start()
+            guard !Task.isCancelled else { return }
+            searchResults = response.mapItems.compactMap { item in
+                guard let name = item.placemark.locality ?? item.placemark.name else { return nil }
+                let country = item.placemark.country ?? ""
+                let coord = item.placemark.coordinate
+                return Location(name: name, country: country, latitude: coord.latitude, longitude: coord.longitude)
+            }
+            var seen: Set<String> = []
+            searchResults = searchResults.filter { loc in
+                seen.insert("\(loc.name)-\(loc.country)").inserted
+            }
+        } catch {
+            if !Task.isCancelled {
+                searchResults = []
             }
         }
     }

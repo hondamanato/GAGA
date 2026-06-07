@@ -13,7 +13,8 @@ enum AppleSignInNonce {
             var randoms = [UInt8](repeating: 0, count: 16)
             let status = SecRandomCopyBytes(kSecRandomDefault, randoms.count, &randoms)
             if status != errSecSuccess {
-                fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(status)")
+                assertionFailure("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(status)")
+                return result
             }
 
             for random in randoms where remaining > 0 {

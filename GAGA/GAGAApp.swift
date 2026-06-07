@@ -31,7 +31,11 @@ struct GAGAApp: App {
         WindowGroup {
             Group {
                 if authViewModel.isLoggedIn {
-                    ContentView()
+                    if authViewModel.needsProfileSetup {
+                        SetupProfileView()
+                    } else {
+                        ContentView()
+                    }
                 } else {
                     LoginView()
                 }

@@ -1,8 +1,11 @@
 import SwiftUI
 import MapboxMaps
+import MapKit
 
 struct TripJournalView: View {
     let initialTrip: Trip
+    var initialLocationIndex: Int? = nil
+
     @Environment(PostStore.self) private var postStore
     @Environment(TripStore.self) private var tripStore
     @Environment(AuthViewModel.self) private var authViewModel
@@ -24,6 +27,8 @@ struct TripJournalView: View {
     @State private var insertIndex: Int = 0
     @State private var detailLocation: Location?
     @State private var showComments = false
+    @State private var selectedSegmentIndex: Int? = nil
+    @State private var routeSegments: [TripRouteSegment] = []
 
     @State private var viewport: Viewport = .idle
 
@@ -33,15 +38,21 @@ struct TripJournalView: View {
 
     // MARK: - Route segments for this trip
 
-    private var tripRouteSegments: [TripRouteSegment] {
+    private func loadRouteSegments() async {
         var segments: [TripRouteSegment] = []
         var previous = trip.origin
         for (index, dest) in trip.destinations.enumerated() {
-            let coords = generateGreatCirclePath(
-                from: CLLocationCoordinate2D(latitude: previous.latitude, longitude: previous.longitude),
-                to: CLLocationCoordinate2D(latitude: dest.latitude, longitude: dest.longitude),
-                pointCount: 100
-            )
+            let from = CLLocationCoordinate2D(latitude: previous.latitude, longitude: previous.longitude)
+            let to = CLLocationCoordinate2D(latitude: dest.latitude, longitude: dest.longitude)
+            let transport = trip.transportType(forSegment: index)
+
+            let coords: [CLLocationCoordinate2D]
+            if transport.usesRoadRoute {
+                coords = await fetchRoadRoute(from: from, to: to, transportType: transport) ?? generateGreatCirclePath(from: from, to: to, pointCount: 100)
+            } else {
+                coords = generateGreatCirclePath(from: from, to: to, pointCount: 100)
+            }
+
             let midIndex = coords.count / 2
             let midpoint = coords.isEmpty ? CLLocationCoordinate2D(latitude: 0, longitude: 0) : coords[midIndex]
             let nextPt = midIndex + 1 < coords.count ? coords[midIndex + 1] : coords.last ?? midpoint
@@ -54,11 +65,38 @@ struct TripJournalView: View {
             ))
             previous = dest
         }
-        return segments
+        routeSegments = segments
+    }
+
+    private func fetchRoadRoute(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D, transportType: TransportType) async -> [CLLocationCoordinate2D]? {
+        let request = MKDirections.Request()
+        request.source = MKMapItem(placemark: MKPlacemark(coordinate: from))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: to))
+        request.transportType = transportType.mkTransportType
+        request.requestsAlternateRoutes = false
+        do {
+            let response = try await MKDirections(request: request).calculate()
+            guard let route = response.routes.first else { return nil }
+            let count = route.polyline.pointCount
+            let points = route.polyline.points()
+            return (0..<count).map { points[$0].coordinate }
+        } catch {
+            return nil
+        }
     }
 
     private var initialCamera: Viewport {
         let allLocations = [trip.origin] + trip.destinations
+
+        // 特定ロケーションが指定されていたらそこにフォーカス
+        if let idx = initialLocationIndex, allLocations.indices.contains(idx) {
+            let loc = allLocations[idx]
+            return .camera(
+                center: CLLocationCoordinate2D(latitude: loc.latitude - 1.5, longitude: loc.longitude),
+                zoom: 5, bearing: 0, pitch: 0
+            )
+        }
+
         let lats = allLocations.map(\.latitude)
         let lons = allLocations.map(\.longitude)
         let centerLat = (lats.min()! + lats.max()!) / 2
@@ -94,6 +132,10 @@ struct TripJournalView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            if let idx = initialLocationIndex {
+                selectedLocationIndex = idx
+                scrolledCardId = idx
+            }
             viewport = initialCamera
         }
         .onChange(of: selectedLocationIndex) {
@@ -101,16 +143,17 @@ struct TripJournalView: View {
             guard locations.indices.contains(selectedLocationIndex) else { return }
             let loc = locations[selectedLocationIndex]
             // Offset latitude upward so pin appears above the bottom cards area
-            let offsetLat = loc.latitude - 1.2
+            let offsetLat = loc.latitude - 1.5
             withViewportAnimation(.fly) {
                 viewport = .camera(
                     center: CLLocationCoordinate2D(latitude: offsetLat, longitude: loc.longitude),
-                    zoom: 8, bearing: 0, pitch: 0
+                    zoom: 5, bearing: 0, pitch: 0
                 )
             }
         }
         .task {
             await postStore.loadPosts(forTripId: trip.id)
+            await loadRouteSegments()
         }
         .sheet(isPresented: $showMenu) {
             TripMenuSheet(trip: trip)
@@ -154,6 +197,22 @@ struct TripJournalView: View {
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(24)
         }
+        .sheet(isPresented: Binding(
+            get: { selectedSegmentIndex != nil },
+            set: { if !$0 { selectedSegmentIndex = nil } }
+        )) {
+            if let index = selectedSegmentIndex {
+                TransportTypePicker(
+                    current: trip.transportType(forSegment: index),
+                    onSelect: { type in
+                        Task { await updateTransport(type, forSegment: index) }
+                        selectedSegmentIndex = nil
+                    }
+                )
+                .presentationDetents([.height(280)])
+                .presentationCornerRadius(24)
+            }
+        }
     }
 
     private func estimatedDate(forInsertAt index: Int) -> Date {
@@ -189,6 +248,18 @@ struct TripJournalView: View {
         }
     }
 
+    private func updateTransport(_ type: TransportType, forSegment index: Int) async {
+        var updated = trip
+        updated.segmentTransports["\(index)"] = type.rawValue
+        do {
+            try await TripService().update(updated)
+            tripStore.applyUpdate(updated)
+            await loadRouteSegments()
+        } catch {
+            // silent fail
+        }
+    }
+
     // MARK: - Globe Map
 
     private var globeMap: some View {
@@ -196,23 +267,24 @@ struct TripJournalView: View {
             MapReader { proxy in
                 Map(viewport: $viewport) {
                     // Route lines
-                    ForEvery(tripRouteSegments, id: \.id) { segment in
+                    ForEvery(routeSegments, id: \.id) { segment in
                         GeoJSONSource(id: "trip-route-\(segment.id)")
                             .data(.geometry(.lineString(LineString(segment.coordinates))))
 
                         makeRouteLayer(for: segment)
                     }
 
-                    // Airplane annotations
-                    ForEvery(tripRouteSegments, id: \.id) { segment in
+                    // Transport annotations
+                    ForEvery(Array(routeSegments.enumerated()), id: \.element.id) { index, segment in
                         MapViewAnnotation(coordinate: segment.midpoint) {
                             let angle = planeAngle(for: segment, tick: cameraTick)
-                            Image(systemName: "airplane")
+                            let transport = trip.transportType(forSegment: index)
+                            Image(systemName: transport.rawValue)
                                 .font(.system(size: 20, weight: .bold))
                                 .foregroundStyle(.white)
                                 .shadow(color: .black.opacity(0.6), radius: 2)
-                                .rotationEffect(.degrees(angle))
-                                .allowsHitTesting(false)
+                                .rotationEffect(.degrees(transport == .airplane ? angle : 0))
+                                .onTapGesture { selectedSegmentIndex = index }
                         }
                         .allowOverlap(true)
                     }
@@ -221,28 +293,15 @@ struct TripJournalView: View {
                     ForEvery(Array(tripLocations.enumerated()), id: \.offset) { index, pin in
                         MapViewAnnotation(coordinate: CLLocationCoordinate2D(latitude: pin.latitude, longitude: pin.longitude)) {
                             let isSelected = index == selectedLocationIndex
+                            let pinSize: CGFloat = isSelected ? 48 : 36
                             VStack(spacing: 2) {
-                                ZStack {
-                                    if isSelected {
-                                        Circle()
-                                            .fill(Color.blue.opacity(0.25))
-                                            .frame(width: 32, height: 32)
-                                        Circle()
-                                            .stroke(Color.blue, lineWidth: 2.5)
-                                            .frame(width: 32, height: 32)
-                                            .shadow(color: .blue.opacity(0.8), radius: 8)
-                                    }
-                                    Circle()
-                                        .fill(.white)
-                                        .frame(width: isSelected ? 18 : 12, height: isSelected ? 18 : 12)
-                                        .overlay(
-                                            Circle()
-                                                .fill(GAGATheme.coral)
-                                                .frame(width: isSelected ? 12 : 8, height: isSelected ? 12 : 8)
-                                        )
-                                        .shadow(radius: 3)
-                                }
-                                .animation(.easeInOut(duration: 0.3), value: isSelected)
+                                locationPinImage(for: pin)
+                                    .frame(width: pinSize, height: pinSize)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(isSelected ? .blue : .white, lineWidth: isSelected ? 3 : 2.5))
+                                    .shadow(color: isSelected ? .blue.opacity(0.6) : .black.opacity(0.3), radius: isSelected ? 8 : 3, y: 1)
+                                    .animation(.easeInOut(duration: 0.3), value: isSelected)
+
                                 Text(pin.name)
                                     .font(.caption2)
                                     .fontWeight(.semibold)
@@ -448,10 +507,15 @@ struct TripJournalView: View {
         .padding(.horizontal, 6)
     }
 
+    private static let windowShape = UnevenRoundedRectangle(
+        topLeadingRadius: 80, bottomLeadingRadius: 50,
+        bottomTrailingRadius: 50, topTrailingRadius: 80
+    )
+
     private func locationCard(location: Location) -> some View {
         return ZStack(alignment: .topLeading) {
             locationHeroImage(for: location)
-                .frame(width: 240, height: 300)
+                .frame(width: 220, height: 290)
                 .clipped()
 
             let flag = flagEmoji(for: location.country)
@@ -477,7 +541,9 @@ struct TripJournalView: View {
                     )
                 )
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(Self.windowShape)
+        .overlay(Self.windowShape.stroke(.white.opacity(0.5), lineWidth: 3))
+        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
     }
 
     // MARK: - Hero Image
@@ -530,6 +596,30 @@ struct TripJournalView: View {
         return result
     }
 
+    @ViewBuilder
+    private func locationPinImage(for location: Location) -> some View {
+        if let urlStr = trip.locationCoverImages[location.id], let url = URL(string: urlStr) {
+            CachedAsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Circle().fill(GAGATheme.deepNavy.opacity(0.5))
+                    .overlay { ProgressView().tint(.white).scaleEffect(0.5) }
+            }
+        } else if let asset = LocationPostsView.heroAssets[location.country] {
+            Image(asset)
+                .resizable()
+                .scaledToFill()
+        } else {
+            let token = MapboxOptions.accessToken
+            let urlStr = "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/\(location.longitude),\(location.latitude),10,0/100x100@2x?access_token=\(token)"
+            CachedAsyncImage(url: URL(string: urlStr)) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Circle().fill(GAGATheme.deepNavy.opacity(0.5))
+            }
+        }
+    }
+
     private func planeAngle(for segment: TripRouteSegment, tick: Int) -> Double {
         _ = tick
         guard let map = mapRef else { return segment.bearing - 90 }
@@ -551,8 +641,6 @@ private struct TripRouteSegment {
 }
 
 // MARK: - Add Step Sheet
-
-import MapKit
 
 private struct AddStepSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -763,6 +851,52 @@ private struct AddStepSheet: View {
             }
         } catch {
             if !Task.isCancelled { searchResults = [] }
+        }
+    }
+}
+
+// MARK: - Transport Type Picker
+
+private struct TransportTypePicker: View {
+    let current: TransportType
+    let onSelect: (TransportType) -> Void
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Capsule()
+                .fill(.secondary.opacity(0.4))
+                .frame(width: 36, height: 5)
+                .padding(.top, 8)
+
+            Text("移動手段")
+                .font(GAGATheme.headlineFont)
+
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(TransportType.allCases, id: \.self) { type in
+                    let isSelected = type == current
+                    Button {
+                        onSelect(type)
+                    } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: type.rawValue)
+                                .font(.system(size: 24))
+                                .frame(width: 52, height: 52)
+                                .background(isSelected ? GAGATheme.coral : Color(.systemGray6))
+                                .foregroundStyle(isSelected ? .white : .primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            Text(type.label)
+                                .font(GAGATheme.captionFont)
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+
+            Spacer()
         }
     }
 }

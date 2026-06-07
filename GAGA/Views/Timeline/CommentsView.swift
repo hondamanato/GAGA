@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct CommentsView: View {
     let trip: Trip
@@ -13,6 +14,7 @@ struct CommentsView: View {
     @State private var isLoading = false
     @State private var isSending = false
     @State private var errorMessage: String?
+    @State private var commentsListener: ListenerRegistration?
 
     private let tripService = TripService()
     private let userService = UserService()
@@ -31,7 +33,8 @@ struct CommentsView: View {
                     Button("閉じる") { dismiss() }
                 }
             }
-            .task { await load() }
+            .onAppear { startListening() }
+            .onDisappear { commentsListener?.remove() }
             .alert(
                 "コメントの取得に失敗しました",
                 isPresented: Binding(
@@ -62,7 +65,8 @@ struct CommentsView: View {
                 ForEach(comments) { comment in
                     CommentRow(
                         comment: comment,
-                        user: userCache[comment.userId]
+                        user: userCache[comment.userId],
+                        currentUserId: authViewModel.firebaseUID
                     )
                     .listRowSeparator(.hidden)
                 }
@@ -94,18 +98,21 @@ struct CommentsView: View {
         return !newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func load() async {
+    private func startListening() {
         isLoading = true
-        defer { isLoading = false }
-        do {
-            let fetched = try await tripService.fetchComments(tripId: trip.id)
-            comments = fetched
-            let uniqueUserIds = Array(Set(fetched.map(\.userId)))
-            if !uniqueUserIds.isEmpty {
-                userCache = (try? await userService.fetchUsers(ids: uniqueUserIds)) ?? [:]
+        commentsListener = tripService.listenComments(tripId: trip.id) { newComments in
+            Task { @MainActor in
+                comments = newComments
+                isLoading = false
+                let newUserIds = Set(newComments.map(\.userId)).subtracting(userCache.keys)
+                if !newUserIds.isEmpty {
+                    if let fetched = try? await userService.fetchUsers(ids: Array(newUserIds)) {
+                        for (key, value) in fetched {
+                            userCache[key] = value
+                        }
+                    }
+                }
             }
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 
@@ -117,7 +124,6 @@ struct CommentsView: View {
         do {
             try await tripStore.addComment(to: trip, userId: uid, text: text)
             newText = ""
-            await load()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -127,6 +133,10 @@ struct CommentsView: View {
 private struct CommentRow: View {
     let comment: Comment
     let user: AppUser?
+    let currentUserId: String?
+
+    @State private var showReportSheet = false
+    @State private var showReportDone = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -146,5 +156,39 @@ private struct CommentRow: View {
             Spacer()
         }
         .padding(.vertical, 4)
+        .contextMenu {
+            if currentUserId != comment.userId {
+                Button(role: .destructive) {
+                    showReportSheet = true
+                } label: {
+                    Label("報告する", systemImage: "exclamationmark.triangle")
+                }
+            }
+        }
+        .confirmationDialog("報告の理由を選択", isPresented: $showReportSheet, titleVisibility: .visible) {
+            Button("スパム") { Task { await submitReport(reason: "スパム") } }
+            Button("不適切な内容") { Task { await submitReport(reason: "不適切な内容") } }
+            Button("ハラスメント") { Task { await submitReport(reason: "ハラスメント") } }
+            Button("その他") { Task { await submitReport(reason: "その他") } }
+            Button("キャンセル", role: .cancel) {}
+        }
+        .alert("報告を送信しました", isPresented: $showReportDone) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("ご報告ありがとうございます。内容を確認いたします。")
+        }
+    }
+
+    private func submitReport(reason: String) async {
+        guard let reporterId = currentUserId else { return }
+        try? await Firestore.firestore().collection("reports").addDocument(data: [
+            "reporterId": reporterId,
+            "contentType": "comment",
+            "contentId": comment.id,
+            "contentOwnerId": comment.userId,
+            "reason": reason,
+            "createdAt": FieldValue.serverTimestamp()
+        ])
+        showReportDone = true
     }
 }

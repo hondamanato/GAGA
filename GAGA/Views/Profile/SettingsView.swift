@@ -13,17 +13,17 @@ struct SettingsView: View {
         List {
             Section("アカウント") {
                 NavigationLink {
-                    Text("プロフィール編集")
+                    EditProfileView()
                 } label: {
                     Label("プロフィール編集", systemImage: "person.crop.circle")
                 }
                 NavigationLink {
-                    Text("アカウント設定")
+                    AccountSettingsView()
                 } label: {
                     Label("アカウント", systemImage: "key.fill")
                 }
                 NavigationLink {
-                    Text("リンクされたアカウント")
+                    LinkedAccountsView()
                 } label: {
                     Label("連携アカウント", systemImage: "link")
                 }
@@ -31,12 +31,12 @@ struct SettingsView: View {
 
             Section("通知") {
                 NavigationLink {
-                    Text("プッシュ通知設定")
+                    PushNotificationSettingsView()
                 } label: {
                     Label("プッシュ通知", systemImage: "bell.fill")
                 }
                 NavigationLink {
-                    Text("メール通知設定")
+                    EmailNotificationSettingsView()
                 } label: {
                     Label("メール通知", systemImage: "envelope.fill")
                 }
@@ -44,17 +44,17 @@ struct SettingsView: View {
 
             Section("プライバシーとセキュリティ") {
                 NavigationLink {
-                    Text("プライバシー設定")
+                    PrivacySettingsView()
                 } label: {
                     Label("プライバシー", systemImage: "lock.fill")
                 }
                 NavigationLink {
-                    Text("ブロックしたユーザー")
+                    BlockedUsersView()
                 } label: {
                     Label("ブロックしたユーザー", systemImage: "person.fill.xmark")
                 }
                 NavigationLink {
-                    Text("位置情報設定")
+                    LocationSettingsView()
                 } label: {
                     Label("位置情報", systemImage: "location.fill")
                 }
@@ -62,17 +62,17 @@ struct SettingsView: View {
 
             Section("表示") {
                 NavigationLink {
-                    Text("言語設定")
+                    LanguageSettingsView()
                 } label: {
                     Label("言語", systemImage: "globe")
                 }
                 NavigationLink {
-                    Text("テーマ設定")
+                    ThemeSettingsView()
                 } label: {
                     Label("テーマ", systemImage: "paintbrush.fill")
                 }
                 NavigationLink {
-                    Text("単位設定")
+                    UnitSettingsView()
                 } label: {
                     Label("単位 (km / mile)", systemImage: "ruler.fill")
                 }
@@ -80,17 +80,17 @@ struct SettingsView: View {
 
             Section("データ") {
                 NavigationLink {
-                    Text("ストレージ使用状況")
+                    StorageSettingsView()
                 } label: {
                     Label("ストレージ", systemImage: "internaldrive.fill")
                 }
                 NavigationLink {
-                    Text("データのエクスポート")
+                    DataExportView()
                 } label: {
                     Label("データをエクスポート", systemImage: "square.and.arrow.up")
                 }
                 NavigationLink {
-                    Text("キャッシュ管理")
+                    CacheClearView()
                 } label: {
                     Label("キャッシュをクリア", systemImage: "trash.fill")
                 }
@@ -98,17 +98,17 @@ struct SettingsView: View {
 
             Section("サポート") {
                 NavigationLink {
-                    Text("ヘルプセンター")
+                    HelpView()
                 } label: {
                     Label("ヘルプ", systemImage: "questionmark.circle.fill")
                 }
                 NavigationLink {
-                    Text("フィードバック送信")
+                    FeedbackView()
                 } label: {
                     Label("フィードバックを送る", systemImage: "paperplane.fill")
                 }
                 NavigationLink {
-                    Text("お問い合わせ")
+                    ContactView()
                 } label: {
                     Label("お問い合わせ", systemImage: "envelope.open.fill")
                 }
@@ -116,17 +116,17 @@ struct SettingsView: View {
 
             Section("このアプリについて") {
                 NavigationLink {
-                    Text("利用規約")
+                    TermsOfServiceView()
                 } label: {
                     Label("利用規約", systemImage: "doc.text.fill")
                 }
                 NavigationLink {
-                    Text("プライバシーポリシー")
+                    PrivacyPolicyView()
                 } label: {
                     Label("プライバシーポリシー", systemImage: "hand.raised.fill")
                 }
                 NavigationLink {
-                    Text("オープンソースライセンス")
+                    LicensesView()
                 } label: {
                     Label("ライセンス", systemImage: "doc.plaintext.fill")
                 }
@@ -149,7 +149,7 @@ struct SettingsView: View {
 
             Section {
                 NavigationLink {
-                    Text("アカウント削除")
+                    DeleteAccountView()
                 } label: {
                     Text("アカウントを削除")
                         .foregroundStyle(.red)

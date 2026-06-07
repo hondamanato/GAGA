@@ -4,6 +4,6 @@ struct TripDetailView: View {
     let trip: Trip
 
     var body: some View {
-        TripJournalView(trip: trip)
+        TripJournalView(initialTrip: trip)
     }
 }

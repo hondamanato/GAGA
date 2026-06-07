@@ -1,4 +1,43 @@
 import Foundation
+import MapKit
+
+enum TransportType: String, Codable, CaseIterable {
+    case airplane = "airplane"
+    case train = "tram.fill"
+    case car = "car.fill"
+    case bus = "bus.fill"
+    case ship = "ferry.fill"
+    case walk = "figure.walk"
+    case bicycle = "bicycle"
+    case motorcycle = "motorcycle.fill"
+
+    var label: String {
+        switch self {
+        case .airplane: return "飛行機"
+        case .train: return "電車"
+        case .car: return "車"
+        case .bus: return "バス"
+        case .ship: return "船"
+        case .walk: return "徒歩"
+        case .bicycle: return "自転車"
+        case .motorcycle: return "バイク"
+        }
+    }
+
+    var usesRoadRoute: Bool {
+        switch self {
+        case .airplane, .ship: return false
+        case .train, .car, .bus, .walk, .bicycle, .motorcycle: return true
+        }
+    }
+
+    var mkTransportType: MKDirectionsTransportType {
+        switch self {
+        case .walk, .bicycle: return .walking
+        default: return .automobile
+        }
+    }
+}
 
 enum TripStatus: String, Codable, CaseIterable {
     case planning = "計画中"
@@ -40,11 +79,18 @@ struct Trip: Identifiable, Codable {
     var schedule: [DaySchedule]
     var coverImageURL: String?
     var locationCoverImages: [String: String]
+    var segmentTransports: [String: String]
     var likesCount: Int
     var commentsCount: Int
     var createdAt: Date
 
-    init(id: String = UUID().uuidString, userId: String, title: String, origin: Location, destinations: [Location], departureDate: Date, returnDate: Date, status: TripStatus = .planning, schedule: [DaySchedule] = [], coverImageURL: String? = nil, locationCoverImages: [String: String] = [:], likesCount: Int = 0, commentsCount: Int = 0, createdAt: Date = .now) {
+    func transportType(forSegment index: Int) -> TransportType {
+        guard let raw = segmentTransports["\(index)"],
+              let type = TransportType(rawValue: raw) else { return .airplane }
+        return type
+    }
+
+    init(id: String = UUID().uuidString, userId: String, title: String, origin: Location, destinations: [Location], departureDate: Date, returnDate: Date, status: TripStatus = .planning, schedule: [DaySchedule] = [], coverImageURL: String? = nil, locationCoverImages: [String: String] = [:], segmentTransports: [String: String] = [:], likesCount: Int = 0, commentsCount: Int = 0, createdAt: Date = .now) {
         self.id = id
         self.userId = userId
         self.title = title
@@ -56,6 +102,7 @@ struct Trip: Identifiable, Codable {
         self.schedule = schedule
         self.coverImageURL = coverImageURL
         self.locationCoverImages = locationCoverImages
+        self.segmentTransports = segmentTransports
         self.likesCount = likesCount
         self.commentsCount = commentsCount
         self.createdAt = createdAt
@@ -74,6 +121,7 @@ struct Trip: Identifiable, Codable {
         schedule = try c.decode([DaySchedule].self, forKey: .schedule)
         coverImageURL = try c.decodeIfPresent(String.self, forKey: .coverImageURL)
         locationCoverImages = try c.decodeIfPresent([String: String].self, forKey: .locationCoverImages) ?? [:]
+        segmentTransports = try c.decodeIfPresent([String: String].self, forKey: .segmentTransports) ?? [:]
         likesCount = try c.decodeIfPresent(Int.self, forKey: .likesCount) ?? 0
         commentsCount = try c.decodeIfPresent(Int.self, forKey: .commentsCount) ?? 0
         createdAt = try c.decode(Date.self, forKey: .createdAt)
