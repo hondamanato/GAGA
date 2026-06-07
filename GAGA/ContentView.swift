@@ -56,7 +56,7 @@ struct ContentView: View {
         .tint(GAGATheme.coral)
         .task(id: authViewModel.firebaseUID) {
             tripStore.startListening(userId: authViewModel.firebaseUID)
-            notificationStore.startListening(userId: authViewModel.firebaseUID)
+            notificationStore.startListening(userId: authViewModel.firebaseUID ?? "")
         }
     }
 }

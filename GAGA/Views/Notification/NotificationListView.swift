@@ -27,7 +27,7 @@ struct NotificationListView: View {
                 if !notificationStore.notifications.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("すべて既読") {
-                            Task { await notificationStore.markAllAsRead(userId: authViewModel.firebaseUID) }
+                            Task { await notificationStore.markAllAsRead(userId: authViewModel.firebaseUID ?? "") }
                         }
                         .font(.caption)
                     }
