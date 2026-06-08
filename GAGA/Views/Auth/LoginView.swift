@@ -208,9 +208,9 @@ private struct EmailAuthView: View {
                             .background(.gray.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                     }
 
-                    TextField("メールアドレス", text: $email)
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
+                    TextField(isSignUp ? "メールアドレス" : "メールアドレスまたはユーザーネーム", text: $email)
+                        .textContentType(isSignUp ? .emailAddress : .username)
+                        .keyboardType(isSignUp ? .emailAddress : .default)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .padding(12)
@@ -288,10 +288,12 @@ private struct EmailAuthView: View {
                 displayName: displayName.trimmingCharacters(in: .whitespaces)
             )
         } else {
-            await authViewModel.signInWithEmail(
-                email: email.trimmingCharacters(in: .whitespaces),
-                password: password
-            )
+            let input = email.trimmingCharacters(in: .whitespaces)
+            if input.contains("@") {
+                await authViewModel.signInWithEmail(email: input, password: password)
+            } else {
+                await authViewModel.signInWithUsername(username: input, password: password)
+            }
         }
 
         if authViewModel.errorMessage == nil {

@@ -147,6 +147,14 @@ struct UserService {
         return !doc.exists
     }
 
+    func fetchEmailByUsername(_ username: String) async throws -> String? {
+        let lower = username.lowercased()
+        let doc = try await usernames.document(lower).getDocument()
+        guard let userId = doc.data()?["userId"] as? String else { return nil }
+        let userDoc = try await users.document(userId).getDocument()
+        return userDoc.data()?["email"] as? String
+    }
+
     func setUsername(_ username: String, userId: String, oldUsername: String?) async throws {
         let lower = username.lowercased()
         let db = Firestore.firestore()

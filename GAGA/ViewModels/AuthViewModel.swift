@@ -120,6 +120,21 @@ final class AuthViewModel {
         }
     }
 
+    func signInWithUsername(username: String, password: String) async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            guard let email = try await UserService().fetchEmailByUsername(username) else {
+                errorMessage = String(localized: "ユーザーネームが見つかりません")
+                return
+            }
+            let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            await loadOrCreateUserDoc(uid: result.user.uid, fallbackName: result.user.displayName)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func updateProfile(displayName: String, bio: String, username: String? = nil) async {
         guard let uid = firebaseUID else { return }
         errorMessage = nil
@@ -311,12 +326,21 @@ final class AuthViewModel {
             let snapshot = try await ref.getDocument()
             if snapshot.exists {
                 currentUser = try snapshot.data(as: AppUser.self)
+                // メールアドレスが未保存の場合は保存
+                if let email = Auth.auth().currentUser?.email,
+                   snapshot.data()?["email"] == nil {
+                    try? await ref.updateData(["email": email])
+                }
             } else {
                 let newUser = AppUser(
                     id: uid,
                     displayName: (fallbackName?.isEmpty == false ? fallbackName! : "Traveler")
                 )
                 try ref.setData(from: newUser)
+                // メールアドレスを別フィールドとして保存
+                if let email = Auth.auth().currentUser?.email {
+                    try? await ref.updateData(["email": email])
+                }
                 currentUser = newUser
             }
         } catch {
